@@ -127,10 +127,10 @@ def find_ttl_start(trace, N):
 
 def plot_pat(fig, axs, frame, x_pos,y_pos):
     frame = Image.fromarray(frame).convert('RGB')
-    axs[0].set_title('frames', fontproperties=sub_titles)
+    axs[0].set_title('projected frames', fontproperties=sub_titles)
     axs[0].set_yticks([])
     axs[0].scatter(x_pos,y_pos)
-    axs[0].set_ylabel('Patterns',fontproperties=y_labels)
+    axs[0].set_ylabel('grid points',fontproperties=y_labels)
     axs[0].set_ylim(-5,5)
     img = OffsetImage(frame, zoom=3.5)
     ab = AnnotationBbox(img,(x_pos,y_pos),pad=0)
@@ -201,12 +201,16 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
             feild_id = channel_name_to_index(reader,channel_name)
             analogsignals = segment.analogsignals[feild_id]
             unit = str(analogsignals.units).split()[1]
+            if unit =='pA':
+                unit = 'V'
+            else:
+                pass 
             trace = np.array(analogsignals)
             trace_average.append(trace)
             print(f'length of trace = {len(trace)}')
             t = np.linspace(0,float(tf-ti),len(trace))
             axs[plt_no].plot(t,trace,alpha=0.7,linewidth=2, 
-                             label = f'trace-{s}')
+                             label = f'sweep - {s+1}')
         axs[plt_no].set_ylabel(unit, fontproperties=y_labels)
         trace_average = np.mean(trace_average, axis=0)
         if channel_name =='FrameTTL':
@@ -221,12 +225,12 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
                 except:
                     continue
         if channel_name =='IN0':
-            axs[plt_no].set_ylim(-68,-60)
+            axs[plt_no].set_ylim(-70,-50)
             axs[plt_no].set_title('Cell recording',
                                  fontproperties=sub_titles)
             axs[plt_no].plot(t, trace_average, 
                              color='r',linewidth=0.25,
-                             label = 'average trace')
+                             label = 'sweep average')
         else:
             y_u = np.max(trace_average)
             y_l = np.min(trace_average)
@@ -277,8 +281,8 @@ def main(**kwargs):
                 plot_all_cannels(f_name,chanel_name,plt_no, 
                                  fig, axs,frames)
             plt.xlabel('time(s)',fontproperties=y_labels)
-            plt.xlim([2.75,4.5 ])
-            plt.suptitle('Rersponse for patterns',
+            plt.xlim([3.25,4 ])
+            plt.suptitle('Response to patterns',
                          fontproperties=main_title)
             plt.tight_layout()
             fig.align_ylabels()
