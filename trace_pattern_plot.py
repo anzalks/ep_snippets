@@ -45,7 +45,6 @@ def pattern_files(c):
     f_list = list(c.glob('**/*txt'))
     return f_list
 
-
 def pattern_dict(p_file):
     txt = str(p_file)
     txt_read = np.loadtxt(txt, comments="#", delimiter=" ", dtype=int,
@@ -53,8 +52,8 @@ def pattern_dict(p_file):
     txt_read = np.transpose(txt_read) 
     #transposing so that the first index is the first frame
     Framedict = {}
-    print(f'file name = {str(p_file.stem)}')
-    print(f'range of len  = {len(txt_read)}')
+#    print(f'file name = {str(p_file.stem)}')
+#    print(f'range of len  = {len(txt_read)}')
     if len(txt_read)==8:
         print('single pattern')
         fr_no = 0 
@@ -79,7 +78,7 @@ def pattern_dict(p_file):
             for j in range(len(bright_idx_2d)):
                 zero_array[bright_idx_2d[j][0]][bright_idx_2d[j][1]] = 1
             Framedict[fr_no]=zero_array
-    print(f'framedict keys = {Framedict.keys()}')
+#    print(f'framedict keys = {Framedict.keys()}')
     return Framedict
 
 def proj_file_selector(file_name,p_files):
@@ -87,29 +86,34 @@ def proj_file_selector(file_name,p_files):
     reader = nio.AxonIO(f)
     protocol_name = reader._axon_info['sProtocolPath']
     protocol_name = str(protocol_name).split('\\')[-1]
-    protocol_name = protocol_name.split('.')[0]
+    protocol_name = protocol_name.split('.')[-2]
+    print(f'polygon protocol name = {protocol_name}')
     if '42_points' in protocol_name:
         print('point_protocol')
         for p in p_files:
             if '42_points' in str(p):
                 pat_file = p
+                title = 'Points'
                 continue
     elif 'Baseline_5_T_1_1_3_3' in protocol_name:
-        print('patter protocol')
+        print('pattern protocol')
         for p in p_files:
             if '10_patterns' in str(p):
                 pat_file = p
+                title = 'Patterns'
                 continue
-    elif 'training' in protocol_name:
+    elif 'Training' in protocol_name:
         print('training')
         for p in p_files:
             if 'training_pattern' in str(p):
                 pat_file = p
+                print(f'Training pattern file={p}')
+                title = 'Training pattern'
                 continue
     else:
         print('non optical protocol')
         pat_file = None
-    return pat_file
+    return [pat_file, title]
 
 
 def find_ttl_start(trace, N):
@@ -131,8 +135,8 @@ def plot_pat(fig, axs, frame, x_pos,y_pos):
     axs[0].set_yticks([])
     axs[0].scatter(x_pos,y_pos)
     axs[0].set_ylabel('grid points',fontproperties=y_labels)
-    axs[0].set_ylim(-5,5)
-    img = OffsetImage(frame, zoom=3.5)
+    axs[0].set_ylim(-2,2)
+    img = OffsetImage(frame, zoom=1)
     ab = AnnotationBbox(img,(x_pos,y_pos),pad=0)
     axs[0].add_artist(ab)
 #    x,y = axs[0].transData.transform((x_pos,y_pos))
@@ -186,7 +190,7 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
     channels = reader.header['signal_channels']
     chan_count = len(channels)
     file_id = file_name.stem
-    print(f'channel count = {chan_count}')
+#    print(f'channel count = {chan_count}')
     if chan_count > 1:
         block  = reader.read_block(signal_group_mode='split-all')
         segments = block.segments
@@ -207,10 +211,10 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
                 pass 
             trace = np.array(analogsignals)
             trace_average.append(trace)
-            print(f'length of trace = {len(trace)}')
+#            print(f'length of trace = {len(trace)}')
             t = np.linspace(0,float(tf-ti),len(trace))
             axs[plt_no].plot(t,trace,alpha=0.7,linewidth=2, 
-                             label = f'sweep - {s+1}')
+                             label = f'trial - {s+1}')
         axs[plt_no].set_ylabel(unit, fontproperties=y_labels)
         trace_average = np.mean(trace_average, axis=0)
         if channel_name =='FrameTTL':
@@ -219,18 +223,18 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
                 y_pos = 0.4
                 frame= np.array(frames[pat_num+1]*255, dtype = np.uint8)
                 x_pos = x/sampling_rate
-                print(f'x and y = {x_pat[1], x_pos, y_pos}')
+#                print(f'x and y = {x_pat[1], x_pos, y_pos}')
                 try:
                     plot_pat(fig, axs, frame, x_pos,y_pos)
                 except:
                     continue
         if channel_name =='IN0':
-            axs[plt_no].set_ylim(-70,-50)
+            axs[plt_no].set_ylim(-80,-35)
             axs[plt_no].set_title('Cell recording',
                                  fontproperties=sub_titles)
             axs[plt_no].plot(t, trace_average, 
-                             color='r',linewidth=0.25,
-                             label = 'sweep average')
+                             color='k',linewidth=0.25,
+                             label = 'trial average')
         else:
             y_u = np.max(trace_average)
             y_l = np.min(trace_average)
@@ -241,11 +245,12 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
                 y_u = y_u+(y_u*.1)
                 y_l = y_l-(y_l*.1)
             axs[plt_no].plot(t, trace_average, 
-                             color='r',linewidth=0.25,
-                             label = 'average trace')
+                             color='k',linewidth=0.25,
+                             label = 'trial average')
             axs[plt_no].set_ylim(y_l,y_u)
-            axs[plt_no].set_title(channel_name,fontproperties=sub_titles)
-        axs[plt_no].legend(bbox_to_anchor=(1.04,1), loc="upper left")
+            axs[plt_no].set_title(channel_name,
+                                  fontproperties=sub_titles)
+        axs[plt_no].legend(bbox_to_anchor=(1,0.5),loc='center left')
 
 def plot_all_cannels(file_name,chanel_name,plt_no, fig, axs, frames):
     f = str(file_name)
@@ -253,7 +258,7 @@ def plot_all_cannels(file_name,chanel_name,plt_no, fig, axs, frames):
     channels = reader.header['signal_channels']
     chan_count = len(channels)
     chan_count = chan_count+1
-    print(f' channel name inside the fucntion ={chanel_name}')
+#    print(f' channel name inside the fucntion ={chanel_name}')
     subplot_channels(file_name,plt_no,chanel_name,fig,axs, frames)
 
 
@@ -267,28 +272,43 @@ def main(**kwargs):
     outdir.mkdir(exist_ok=True,parents=True)
     abf_list = list_files(p)
     p_files = pattern_files(c)
-    print(f'total no. of projection protocols ={len(p_files)}')
+#    print(f'total no. of projection protocols ={len(p_files)}')
     for f_name in abf_list:
         try:
             print(f'{f_name}')
             plot_name = str(outdir)+'/'+str(f_name.stem)+'.png'
-            p_file = proj_file_selector(f_name,p_files)
+            p_file, title = proj_file_selector(f_name,p_files)
             frames = pattern_dict(p_file)    
-            fig, axs = plt.subplots(5,1, figsize = (8,10),sharex=True)
+            fig, axs = plt.subplots(5,1, figsize = (20,10),sharex=True)
             for plt_no,chanel_name in enumerate(channel_names):
                 plt_no = plt_no+1
-                print (f_name, chanel_name,plt_no)
+#                print (f_name, chanel_name,plt_no)
                 plot_all_cannels(f_name,chanel_name,plt_no, 
                                  fig, axs,frames)
             plt.xlabel('time(s)',fontproperties=y_labels)
-            plt.xlim([3.25,4 ])
-            plt.suptitle('Response to patterns',
+            if title=='Points':
+                xlim = [1.5,11.5]
+            elif title=='Patterns':
+                xlim = [0.8,11]
+            elif title=='Training pattern':
+                axs[1].set_ylim(-70,60)
+                xlim = left=0
+                for i in range(5):
+                    print(f'range = ({i})' )
+                    if i>0:
+                        axs[i].get_legend().remove()
+                    else:
+                        continue
+            else:
+                continue
+            plt.xlim(xlim)
+            plt.suptitle(f'Response to {title}',
                          fontproperties=main_title)
-            plt.tight_layout()
+#            fig.tight_layout()
             fig.align_ylabels()
-            plt.show(block=False)
-            plt.savefig(plot_name)
-            plt.pause(2)
+#            plt.show(block=False)
+            fig.savefig(plot_name, bbox_inches='tight')
+#            plt.pause(2)
             plt.close()
         except:
             continue
