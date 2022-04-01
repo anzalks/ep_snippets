@@ -221,7 +221,9 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames):
             x_pat = find_ttl_start(trace_average, 3)
             for pat_num,x in enumerate(x_pat):
                 y_pos = 0.4
-                frame= np.array(frames[pat_num+1]*255, dtype = np.uint8)
+                fr= np.array(frames[pat_num+1]*255, dtype = np.uint8)
+#                frame = np.invert(fr)
+                frame = fr 
                 x_pos = x/sampling_rate
 #                print(f'x and y = {x_pat[1], x_pos, y_pos}')
                 try:
