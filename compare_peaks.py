@@ -38,12 +38,92 @@ main_title.set_size('xx-large')
 def list_files(p):
     f_list = []
     f_list=list(p.glob('**/*abf'))
+    f_list.sort()
     return f_list
 
 def pattern_files(c):
     f_list = []
     f_list = list(c.glob('**/*txt'))
+    f_list.sort()
     return f_list
+
+def training_finder(f_name):
+    f = str(f_name)
+    reader = nio.AxonIO(f)
+    protocol_name = reader._axon_info['sProtocolPath']
+    protocol_name = str(protocol_name).split('\\')[-1]
+    protocol_name = protocol_name.split('.')[-2]
+#    print(f'protocol name = {protocol_name}')
+    if 'Training' in protocol_name:
+        f_name= f_name
+#        print(f'training {f_name}')
+    else:
+#        print('not training')
+        f_name = None
+#    print(f'out_ training prot = {f_name}')
+    return f_name 
+
+def pre_post_sorted(f_list):
+    for f_name in f_list:
+        training_f = training_finder(f_name)
+        print(f'parsed prot train = {training_f}')
+        if training_f != None:
+            training_indx = f_list.index(training_f)
+            pre = f_list[:training_indx]
+            post = f_list[training_indx+1:]
+#            pprint(f'training file - {training_f} , indx = {training_indx} '
+#                   f'pre file ={pre} '
+#                   f'post file = {post} '
+#                  )
+        else:
+            pre_f_none, post_f_none = None, None
+    return [pre, post, pre_f_none, post_f_none ]
+
+def protocol_tag(file_name):
+    f = str(file_name)
+    reader = nio.AxonIO(f)
+    protocol_name = reader._axon_info['sProtocolPath']
+    protocol_name = str(protocol_name).split('\\')[-1]
+    protocol_name = protocol_name.split('.')[-2]
+    if '42_points' in protocol_name:
+        print('point_protocol')
+        title = 'Points'
+    elif 'Baseline_5_T_1_1_3_3' in protocol_name:
+        print('pattern protocol')
+        title = 'Patterns'
+    elif 'Training' in protocol_name:
+        print('training')
+        title = 'Training pattern'
+    else:
+        print('non optical protocol')
+        title = None
+    return title
+
+def file_pair_pre_pos(pre_list,post_list):
+    paths = {'point':, 'pattern': }
+    for pre in pre_list:
+        tag = protocol_tag(pre)
+        if tag=='Points':
+            paths[point].append(pre)
+        elif tag=='Patterns':
+            pattern.append(pre)
+        else:
+            tag = None
+            continue
+    for post in post_list:
+        tag = protocol_tag(pre)
+        if tag=='Points':
+            point.append(pre)
+        elif tag=='Patterns':
+            pattern.append(pre)
+        else:
+            tag = None
+            continue
+    pprint(f'point files = {point} '
+           f'pattern files = {pattern}'
+          )
+    return [point, pattern]
+
 
 def pattern_dict(p_file):
     txt = str(p_file)
@@ -81,13 +161,14 @@ def pattern_dict(p_file):
 #    print(f'framedict keys = {Framedict.keys()}')
     return Framedict
 
+
 def proj_file_selector(file_name,p_files):
     f = str(file_name)
     reader = nio.AxonIO(f)
     protocol_name = reader._axon_info['sProtocolPath']
     protocol_name = str(protocol_name).split('\\')[-1]
     protocol_name = protocol_name.split('.')[-2]
-    print(f'polygon protocol name = {protocol_name}')
+#    print(f'polygon protocol name = {protocol_name}')
     if '42_points' in protocol_name:
         print('point_protocol')
         for p in p_files:
@@ -276,29 +357,49 @@ def plot_all_cannels(file_name,chanel_name,plt_no, fig, axs, frames, zoom):
 def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
-    outdir = p/'results'
+    outdir = p/'results_scatter_plot'
     outdir.mkdir(exist_ok=True,parents=True)
     abf_list = list_files(p)
     p_files = pattern_files(c)
-#    print(f'total no. of projection protocols ={len(p_files)}')
-    for f_name in abf_list:
-        try:
-            print(f'{f_name}')
-            plot_name = str(outdir)+'/'+str(f_name.stem)+'.png'
-            p_file, title, zoom = proj_file_selector(f_name,p_files)
-            frames = pattern_dict(p_file)   
-#            fig, axs = plt.subplots(5,1, figsize = (9,10),sharex=True)
-            fig, axs = plt.subplots(5,1, figsize = (15,10),sharex=True)
-            for plt_no,chanel_name in enumerate(channel_names):
-                plt_no = plt_no+1
-#                print (f_name, chanel_name,plt_no)
-                plot_all_cannels(f_name,chanel_name,plt_no, 
-                                 fig, axs,frames, zoom)
-            plt.xlabel('time(s)',fontproperties=y_labels)
+    sorted_f_list = pre_post_sorted(abf_list)
+    pre_f_list = sorted_f_list[0]
+    post_f_list = sorted_f_list[1]
+    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+    paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
+
+#    for f_name in abf_list:
+#        print(f'{f_name}')
+#        plot_name = str(outdir)+'/'+str(f_name.stem)+'.png'
+#            p_file, title, zoom = proj_file_selector(f_name,p_files)
+#            frames = pattern_dict(p_file)   
+##            fig, axs = plt.subplots(5,1, figsize = (9,10),sharex=True)
+#            fig, axs = plt.subplots(5,1, figsize = (15,10),sharex=True)
+#            for plt_no,chanel_name in enumerate(channel_names):
+#                plt_no = plt_no+1
+##                print (f_name, chanel_name,plt_no)
+#                plot_all_cannels(f_name,chanel_name,plt_no, 
+#                                 fig, axs,frames, zoom)
+#            plt.xlabel('time(s)',fontproperties=y_labels)
+##            if title=='Points':
+##                xlim = [6.3,7]
+##            elif title=='Patterns':
+##                xlim = [4,5.4]
+##            elif title=='Training pattern':
+##                axs[1].set_ylim(-70,60)
+##                xlim = left=0
+##                for i in range(5):
+##                    print(f'range = ({i})' )
+##                    if i>0:
+##                        axs[i].get_legend().remove()
+##                    else:
+##                        continue
+##            else:
+##                continue
+#
 #            if title=='Points':
-#                xlim = [6.3,7]
+#                xlim = [1.25,11.25]
 #            elif title=='Patterns':
-#                xlim = [4,5.4]
+#                xlim = [0.8,11]
 #            elif title=='Training pattern':
 #                axs[1].set_ylim(-70,60)
 #                xlim = left=0
@@ -310,36 +411,20 @@ def main(**kwargs):
 #                        continue
 #            else:
 #                continue
-
-            if title=='Points':
-                xlim = [1.25,11.25]
-            elif title=='Patterns':
-                xlim = [0.8,11]
-            elif title=='Training pattern':
-                axs[1].set_ylim(-70,60)
-                xlim = left=0
-                for i in range(5):
-                    print(f'range = ({i})' )
-                    if i>0:
-                        axs[i].get_legend().remove()
-                    else:
-                        continue
-            else:
-                continue
-
-            plt.xlim(xlim)
-            plt.suptitle(f'Response to {title}',
-                         fontproperties=main_title)
-#            fig.tight_layout()
-            fig.align_ylabels()
-            plt.subplots_adjust(left=0.1, bottom=None, right=None, top=None,
-                                wspace=None, hspace=0.5)
-#            plt.show(block=False)
-            fig.savefig(plot_name, bbox_inches='tight')
-#            plt.pause(2)
-            plt.close()
-        except:
-            continue
+#
+#            plt.xlim(xlim)
+#            plt.suptitle(f'Response to {title}',
+#                         fontproperties=main_title)
+##            fig.tight_layout()
+#            fig.align_ylabels()
+#            plt.subplots_adjust(left=0.1, bottom=None, right=None, top=None,
+#                                wspace=None, hspace=0.5)
+##            plt.show(block=False)
+#            fig.savefig(plot_name, bbox_inches='tight')
+##            plt.pause(2)
+#            plt.close()
+#        except:
+#            continue
 
 
 
