@@ -100,22 +100,24 @@ def protocol_tag(file_name):
     return title
 
 def file_pair_pre_pos(pre_list,post_list):
-    paths = {'point':, 'pattern': }
+    point = []
+    pattern = [] 
     for pre in pre_list:
         tag = protocol_tag(pre)
+        print(f' tag on the file ={tag}')
         if tag=='Points':
-            paths[point].append(pre)
+            point.append(pre)
         elif tag=='Patterns':
             pattern.append(pre)
         else:
             tag = None
             continue
     for post in post_list:
-        tag = protocol_tag(pre)
+        tag = protocol_tag(post)
         if tag=='Points':
-            point.append(pre)
+            point.append(post)
         elif tag=='Patterns':
-            pattern.append(pre)
+            pattern.append(post)
         else:
             tag = None
             continue
@@ -124,43 +126,96 @@ def file_pair_pre_pos(pre_list,post_list):
           )
     return [point, pattern]
 
+def channel_name_to_index(reader, channel_name):
+    for signal_channel in reader.header['signal_channels']:
+        if channel_name == signal_channel[0]:
+            return int(signal_channel[1])
 
-def pattern_dict(p_file):
-    txt = str(p_file)
-    txt_read = np.loadtxt(txt, comments="#", delimiter=" ", dtype=int,
-                          unpack=True)
-    txt_read = np.transpose(txt_read) 
-    #transposing so that the first index is the first frame
-    Framedict = {}
-#    print(f'file name = {str(p_file.stem)}')
-#    print(f'range of len  = {len(txt_read)}')
-    if len(txt_read)==8:
-        print('single pattern')
-        fr_no = 0 
-        num_cols = txt_read[1]
-        num_rows = txt_read[2]
-        bright_idx = (txt_read[3:])-1
-        arr_size = (num_rows,num_cols)
-        zero_array = np.zeros([num_rows,num_cols])
-        bright_idx_2d = np.transpose(np.unravel_index(bright_idx,arr_size))
-        for j in range(len(bright_idx_2d)):
-            zero_array[bright_idx_2d[j][0]][bright_idx_2d[j][1]] = 1
-        Framedict[fr_no]=zero_array
+def peak_event(file_name):
+    f = str(file_name)
+    reader = nio.AxonIO(f)
+    channels = reader.header['signal_channels']
+    chan_count = len(channels)
+    file_id = file_name.stem
+    block  = reader.read_block(signal_group_mode='split-all')
+    segments = block.segments
+    sample_trace = segments[0].analogsignals[0]
+    sampling_rate = sample_trace.sampling_rate.magnitude
+    ti = sample_trace.t_start
+    tf = sample_trace.t_stop
+    cell_trace_all = []
+    TTL_sig_all = []
+    for s, segment in enumerate(segments):
+        cell = channel_name_to_index(reader,'IN0')
+        analogsignals = segment.analogsignals[cell]
+        unit = str(analogsignals.units).split()[1]
+        trace = np.array(analogsignals)
+        cell_trace_all.append(trace) 
+        t = np.linspace(0,float(tf-ti),len(trace))
+    print (f'IN0 = {cell_trace_all}')
+
+    for s, segment in enumerate(segments):
+        cell = channel_name_to_index(reader,'FrameTTL')
+        analogsignals = segment.analogsignals[cell]
+        unit = str(analogsignals.units).split()[1]
+        trace = np.array(analogsignals)
+        TTL_sig_all.append(trace) 
+        t = np.linspace(0,float(tf-ti),len(trace))
+#    print (f' TTL = {TTL_sig_all}')
+    ttl_av = np.average(TTL_sig_all,axis=0 )
+    ttl_xi= find_ttl_start(trace, 3)
+    ttl_xf = (ttl_xi+0.2*sampling_rate).astype(int)
+    print(len(ttl_xf- ttl_xi))
+    cell_trace  = np.average(cell_trace_all, axis =0)
+    cell_trace_base_line = np.mean(cell_trace[0:2000] )
+    cell_trace_av = cell_trace - cell_trace_base_line
+    print(f' baseline = {cell_trace_av}')
+    print(ttl_xi[0])
+    print(ttl_xf[0])
+    events = []
+    for i,ti in enumerate(ttl_xi): 
+        events.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
+    print(file_id)
+    print(events)
+    return events
+#    print(cell_trace_av[ttl_xi[0]],cell_trace_av[ttl_xf[0]])
+#    events = []
+#    for i in ttl_xi:
+#        for j in ttl_xf:
+#            events.append(cell_trace_av[i,j])
+#    print(events)
+
+
+
+
+
+def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
+    pre_f = points_or_pattern_file_set[0]
+    post_f = points_or_pattern_file_set[1]
+    pre = peak_event(pre_f)
+    post = peak_event(post_f)
+    indices = np.arange(0,len(pre), 1)
+    if len(indices)>11:
+        n_col = 8
     else:
-        for i in range(len(txt_read)):
-            fr_no = txt_read[i][0]
-            num_cols = txt_read[i][1]
-            num_rows = txt_read[i][2]
-            bright_idx = (txt_read[i][3:])-1
-            arr_size = (num_rows,num_cols)
-            zero_array = np.zeros([num_rows,num_cols])
-            bright_idx_2d = np.transpose(np.unravel_index(bright_idx,arr_size))
-            for j in range(len(bright_idx_2d)):
-                zero_array[bright_idx_2d[j][0]][bright_idx_2d[j][1]] = 1
-            Framedict[fr_no]=zero_array
-#    print(f'framedict keys = {Framedict.keys()}')
-    return Framedict
-
+        n_col=5
+    print(f'indices = {indices}')
+    cmap = cm.get_cmap('jet', len(indices))
+    cmap.set_under('gray')
+    for i in  indices :
+        axs[plt_no].scatter(pre[i],post[i], label =i+1)
+#    axs[plt_no].scatter(pre,post, c=indices, cmap=cmap, vmin=0, 
+#                        vmax=indices.max())
+    axs[plt_no].set_xlim(-1,10)
+    axs[plt_no].set_ylim(-1,10)
+    axs[plt_no].plot([-1,10], [-1,10], linestyle='--', color='k')
+    axs[plt_no].set_xlabel('Pre response (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_ylabel('Post reponse in (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].legend(ncol=n_col,loc='upper center', 
+                       bbox_to_anchor=(0.5, -0.15),
+                       fancybox=True,
+                       title="frame numbers")
 
 def proj_file_selector(file_name,p_files):
     f = str(file_name)
@@ -256,7 +311,7 @@ def channel_name_to_index(reader, channel_name):
 #            trace_average.append(trace)
 #            print(f'length of trace = {len(trace)}')
 #            t = np.linspace(0,float(tf-ti),len(trace))
-#            plt.plot(t,trace,alpha=0.7, label = f'trace-{s}')
+#            lplt.plot(t,trace,alpha=0.7, label = f'trace-{s}')
 #        trace_average = np.mean(trace_average, axis=0)
 #        plt.plot(t, trace_average, color='r', label = 'average trace')
 #        plt.title(f'{file_id} chan count ={chan_count}')
@@ -358,15 +413,25 @@ def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     outdir = p/'results_scatter_plot'
+    cell_id = str(p.parent).split('/')[-1]
+    print(f' folder parent = {cell_id}')
     outdir.mkdir(exist_ok=True,parents=True)
     abf_list = list_files(p)
     p_files = pattern_files(c)
+    plot_name = f'{str(outdir)}/{cell_id}.png'
     sorted_f_list = pre_post_sorted(abf_list)
     pre_f_list = sorted_f_list[0]
     post_f_list = sorted_f_list[1]
-    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+#    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
-
+    pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
+    fig, axs = plt.subplots(1,2, figsize = (15,5))
+    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
+    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
+    plt.suptitle(f'cell ID = {cell_id}', 
+                 fontproperties=main_title)
+#    plt.show()
+    fig.savefig(plot_name, bbox_inches='tight')
 #    for f_name in abf_list:
 #        print(f'{f_name}')
 #        plot_name = str(outdir)+'/'+str(f_name.stem)+'.png'
