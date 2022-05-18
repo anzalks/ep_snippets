@@ -12,6 +12,8 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 from matplotlib.font_manager import FontProperties
 from matplotlib import cm
 import seaborn as sns
+import pandas as pd
+
 
 
 class Args: pass 
@@ -195,6 +197,9 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre = peak_event(pre_f)
     post = peak_event(post_f)
     indices = np.arange(0,len(pre), 1)
+    
+    
+    
     if len(indices)>11:
         n_col = 8
     else:
@@ -216,6 +221,7 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
                        bbox_to_anchor=(0.5, -0.15),
                        fancybox=True,
                        title="frame numbers")
+    return  pre, post, indices
 
 def find_ttl_start(trace, N):
     data = np.array(trace)
@@ -238,8 +244,7 @@ def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     outdir = p/'results_scatter_plot'
-    cell_id = p.stem
-#    cell_id = str(p.parent).split('/')[-1]
+    cell_id = str(p.parent).split('/')[-1]
     print(f' folder parent = {cell_id}')
     outdir.mkdir(exist_ok=True,parents=True)
     abf_list = list_files(p)
@@ -252,12 +257,28 @@ def main(**kwargs):
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
     pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     fig, axs = plt.subplots(1,2, figsize = (15,5))
-    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
-    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
+    pre, post, idx = pre_post_plot(paired_list[0], 'points', fig, axs, 0)
+    _,_,_ = pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
+    
+    
+    ## dataframe implementation
+#    cellID_series =
+    df = pd.DataFrame(data={"pre":pre, "post":post, "spot":idx})
+    df.insert(0, 'cellID', cell_id)
+    print(df.head(10))
+    
+    df.to_hdf(f'{outdir}/pre_post_df.h5', key='default')
+    
+    plt.figure()
+    fig = sns.scatterplot(data=df, x='pre', y='post', hue='spot')
+#    fig.suptitle(f'cell ID = {cell_id}',
+#                 fontproperties=main_title)
+    plt.show()
+    
 
 
 if __name__  == '__main__':
