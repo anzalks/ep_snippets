@@ -35,6 +35,12 @@ main_title.set_family('sans-serif')
 main_title.set_weight('bold')
 main_title.set_size('xx-large')
 
+def list_folder(p):
+    f_list = []
+    f_list = list(p.glob('*_cell_*'))
+    f_list.sort()
+    return f_list
+
 def list_files(p):
     f_list = []
     f_list=list(p.glob('**/*abf'))
@@ -152,7 +158,7 @@ def peak_event(file_name):
         trace = np.array(analogsignals)
         cell_trace_all.append(trace) 
         t = np.linspace(0,float(tf-ti),len(trace))
-    print (f'IN0 = {cell_trace_all}')
+#    print (f'IN0 = {cell_trace_all}')
 
     for s, segment in enumerate(segments):
         cell = channel_name_to_index(reader,'FrameTTL')
@@ -169,14 +175,14 @@ def peak_event(file_name):
     cell_trace  = np.average(cell_trace_all, axis =0)
     cell_trace_base_line = np.mean(cell_trace[0:2000] )
     cell_trace_av = cell_trace - cell_trace_base_line
-    print(f' baseline = {cell_trace_av}')
+#    print(f' baseline = {cell_trace_av}')
     print(ttl_xi[0])
     print(ttl_xf[0])
     events = []
     for i,ti in enumerate(ttl_xi): 
         events.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
     print(file_id)
-    print(events)
+#    print(events)
     return events
 #    print(cell_trace_av[ttl_xi[0]],cell_trace_av[ttl_xf[0]])
 #    events = []
@@ -206,9 +212,9 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
         axs[plt_no].scatter(pre[i],post[i], label =i+1)
 #    axs[plt_no].scatter(pre,post, c=indices, cmap=cmap, vmin=0, 
 #                        vmax=indices.max())
-    axs[plt_no].set_xlim(-1,10)
-    axs[plt_no].set_ylim(-1,10)
-    axs[plt_no].plot([-1,10], [-1,10], linestyle='--', color='k')
+    axs[plt_no].set_xlim(-1,11)
+    axs[plt_no].set_ylim(-1,11)
+    axs[plt_no].plot([-1,11], [-1,11], linestyle='--', color='k')
     axs[plt_no].set_xlabel('Pre response (mV)', fontproperties=sub_titles)
     axs[plt_no].set_ylabel('Post reponse in (mV)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
@@ -216,6 +222,26 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
                        bbox_to_anchor=(0.5, -0.15),
                        fancybox=True,
                        title="frame numbers")
+
+def plot_scatter_pre_post(cell, outdir):
+    cell_id = str(cell.stem)
+    abf_list = list_files(cell)
+    outdir = outdir/'scatter_po_vs_pat'
+    outdir.mkdir(exist_ok=True, parents=True)
+    plot_name = f'{str(outdir)}/{cell_id}.png'
+    sorted_f_list = pre_post_sorted(abf_list)
+    pre_f_list = sorted_f_list[0]
+    post_f_list = sorted_f_list[1]
+#    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+    paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
+    pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
+    fig, axs = plt.subplots(1,2, figsize = (15,5))
+    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
+    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
+    plt.suptitle(f'cell ID = {cell_id}', 
+                 fontproperties=main_title)
+#    plt.show()
+    fig.savefig(plot_name, bbox_inches='tight')
 
 def find_ttl_start(trace, N):
     data = np.array(trace)
@@ -237,28 +263,32 @@ def channel_name_to_index(reader, channel_name):
 def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
-    outdir = p/'results_scatter_plot'
-    cell_id = p.stem
-#    cell_id = str(p.parent).split('/')[-1]
-    print(f' folder parent = {cell_id}')
-    outdir.mkdir(exist_ok=True,parents=True)
-    abf_list = list_files(p)
-    p_files = pattern_files(c)
-    plot_name = f'{str(outdir)}/{cell_id}.png'
-    sorted_f_list = pre_post_sorted(abf_list)
-    pre_f_list = sorted_f_list[0]
-    post_f_list = sorted_f_list[1]
-#    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
-    paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
-    pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
-    fig, axs = plt.subplots(1,2, figsize = (15,5))
-    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
-    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
-    plt.suptitle(f'cell ID = {cell_id}', 
-                 fontproperties=main_title)
-#    plt.show()
-    fig.savefig(plot_name, bbox_inches='tight')
-
+    outdir = p/'result_plots'
+    outdir.mkdir(exist_ok=True, parents=True)
+    cells = list_folder(p)
+    pprint(cells)
+#    cell_id = str(p/../).split('/')[-1]
+    print(f'plot saving folder = {outdir}')
+    for cell in cells:
+        print(f'cell  = {cell.stem}')
+        plot_scatter_pre_post(cell, outdir)
+#    abf_list = list_files(cell)
+#    p_files = pattern_files(c)
+#    plot_name = f'{str(outdir)}/{cell_id}.png'
+#    sorted_f_list = pre_post_sorted(abf_list)
+#    pre_f_list = sorted_f_list[0]
+#    post_f_list = sorted_f_list[1]
+##    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+#    paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
+#    pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
+#    fig, axs = plt.subplots(1,2, figsize = (15,5))
+#    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
+#    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
+#    plt.suptitle(f'cell ID = {cell_id}', 
+#                 fontproperties=main_title)
+##    plt.show()
+#    fig.savefig(plot_name, bbox_inches='tight')
+#
 
 if __name__  == '__main__':
     import argparse
@@ -267,7 +297,7 @@ if __name__  == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--abf-path', '-f'
                         , required = False,default ='./', type=str
-                        , help = 'path of folder with  abf files '
+                        , help = 'path of folder with folders as cell data '
                        )
     parser.add_argument('--pattern-path', '-p'
                         , required = False,default ='./', type=str
