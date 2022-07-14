@@ -232,7 +232,7 @@ def plot_scatter_pre_post(cell, outdir):
     sorted_f_list = pre_post_sorted(abf_list)
     pre_f_list = sorted_f_list[0]
     post_f_list = sorted_f_list[1]
-#    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
     pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     fig, axs = plt.subplots(1,2, figsize = (15,5))
