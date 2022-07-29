@@ -191,9 +191,10 @@ def peak_event(file_name):
 #            events.append(cell_trace_av[i,j])
 #    print(events)
 
-
-
-
+def sum_points():
+    pass
+    pre_f = points_or_pattern_file_set[0]
+    post_f = points_or_pattern_file_set[1]
 
 def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
@@ -269,9 +270,9 @@ def main(**kwargs):
     pprint(cells)
 #    cell_id = str(p/../).split('/')[-1]
     print(f'plot saving folder = {outdir}')
-    for cell in cells:
+    for cell in cells[1]:
         print(f'cell  = {cell.stem}')
-        plot_scatter_pre_post(cell, outdir)
+#        plot_scatter_pre_post(cell, outdir)
 #    abf_list = list_files(cell)
 #    p_files = pattern_files(c)
 #    plot_name = f'{str(outdir)}/{cell_id}.png'

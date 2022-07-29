@@ -104,7 +104,7 @@ def proj_file_selector(file_name,p_files):
                 title = 'Patterns'
                 zoom = 1.5
                 continue
-    elif 'Training' in protocol_name:
+    elif 'training' in protocol_name:
         print('training')
         for p in p_files:
             if 'training_pattern' in str(p):
@@ -318,6 +318,7 @@ def main(**kwargs):
             elif title=='Training pattern':
                 axs[1].set_ylim(-70,60)
                 xlim = left=0
+#                xlim=[0.325,0.425]
                 for i in range(5):
                     print(f'range = ({i})' )
                     if i>0:

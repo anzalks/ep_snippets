@@ -60,7 +60,7 @@ def training_finder(f_name):
     protocol_name = str(protocol_name).split('\\')[-1]
     protocol_name = protocol_name.split('.')[-2]
 #    print(f'protocol name = {protocol_name}')
-    if 'Training' in protocol_name:
+    if 'training' in protocol_name:
         f_name= f_name
 #        print(f'training {f_name}')
     else:
