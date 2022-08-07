@@ -113,6 +113,15 @@ def proj_file_selector(file_name,p_files):
                 title = 'Training pattern'
                 zoom = 1.5
                 continue
+    elif 'Training' in protocol_name:
+        print('training')
+        for p in p_files:
+            if 'training_pattern' in str(p):
+                pat_file = p
+                print(f'Training pattern file={p}')
+                title = 'Training pattern'
+                zoom = 1.5
+                continue
     else:
         print('non optical protocol')
         pat_file = None
@@ -235,14 +244,15 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
                 except:
                     continue
         if channel_name =='IN0':
-            axs[plt_no].set_ylim(-75,-50)
+            #axs[plt_no].set_ylim(-75,-50)
+            axs[plt_no].set_ylim(-80,-40)
             axs[plt_no].set_title('Cell recording',
                                  fontproperties=sub_titles)
             axs[plt_no].plot(t, trace_average, 
                              color='k',linewidth=0.25,
                              label = 'trial average')
         elif channel_name =='Field':
-            axs[plt_no].set_ylim(-0.5,0.2)
+            axs[plt_no].set_ylim(0,2)
         else:
             y_u = np.max(trace_average)
             y_l = np.min(trace_average)
@@ -287,8 +297,8 @@ def main(**kwargs):
             plot_name = str(outdir)+'/'+str(f_name.stem)+'.png'
             p_file, title, zoom = proj_file_selector(f_name,p_files)
             frames = pattern_dict(p_file)   
-#            fig, axs = plt.subplots(5,1, figsize = (9,10),sharex=True)
-            fig, axs = plt.subplots(5,1, figsize = (15,10),sharex=True)
+            fig, axs = plt.subplots(5,1, figsize = (9,10),sharex=True)
+            #fig, axs = plt.subplots(5,1, figsize = (15,10),sharex=True)
             for plt_no,chanel_name in enumerate(channel_names):
                 plt_no = plt_no+1
 #                print (f_name, chanel_name,plt_no)
@@ -312,13 +322,16 @@ def main(**kwargs):
 #                continue
 
             if title=='Points':
-                xlim = [1.25,11.25]
+                #xlim = [1.25,11.25]
+                xlim = [6.3,6.7]
             elif title=='Patterns':
-                xlim = [0.8,11]
+                #xlim = [0.8,11]
+                xlim = [4,4.5]
             elif title=='Training pattern':
-                axs[1].set_ylim(-70,60)
-                xlim = left=0
-#                xlim=[0.325,0.425]
+                #axs[1].set_ylim(-70,60)
+                axs[1].set_ylim(-80,-40)
+                #xlim = left=0
+                xlim=[0.325,0.425]
                 for i in range(5):
                     print(f'range = ({i})' )
                     if i>0:
