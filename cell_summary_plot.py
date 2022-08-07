@@ -14,6 +14,8 @@ from matplotlib import cm
 import seaborn as sns
 import trace_pattern_plot as sprot
 import matplotlib.image as mpimg
+from PIL import Image
+
 
 
 class Args: pass 
@@ -248,15 +250,18 @@ def peak_event(file_name):
 
 def image_plot(img_path, title, fig, axs, plt_no):
     fps = str(img_path).split('_')
+    favr = np.array(Image.open(str(img_path)).convert('L'))
+    favr = np.round(np.mean(favr),1) 
     fps = [s for s in fps if "us" in s]
     fps = fps[0].split('.')[0]
-    print(f' frame rate of camera = {fps}')
+    print(f' frame rate of camera = {fps}, mean px val = {favr}')
     img = mpimg.imread(str(img_path))
     axs[plt_no].imshow(img,cmap='gray', vmin = 0, 
                        vmax =255,interpolation='none')
     axs[plt_no].set_xticks([])
     axs[plt_no].set_yticks([])
-    axs[plt_no].set_xlabel(f'frame rate = {fps}', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel(f'frame rate = {fps}, avrg px val ={favr}',
+                           fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
 
 
