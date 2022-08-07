@@ -12,6 +12,8 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 from matplotlib.font_manager import FontProperties
 from matplotlib import cm
 import seaborn as sns
+import trace_pattern_plot as sprot
+import matplotlib.image as mpimg
 
 
 class Args: pass 
@@ -47,9 +49,9 @@ def list_files(p):
     f_list.sort()
     return f_list
 
-def pattern_files(c):
+def image_files(i):
     f_list = []
-    f_list = list(c.glob('**/*txt'))
+    f_list = list(i.glob('**/*bmp'))
     f_list.sort()
     return f_list
 
@@ -244,6 +246,20 @@ def peak_event(file_name):
 #            events.append(cell_trace_av[i,j])
 #    print(events)
 
+def image_plot(img_path, title, fig, axs, plt_no):
+    fps = str(img_path).split('_')
+    fps = [s for s in fps if "us" in s]
+    fps = fps[0].split('.')[0]
+    print(f' frame rate of camera = {fps}')
+    img = mpimg.imread(str(img_path))
+    axs[plt_no].imshow(img,cmap='gray', vmin = 0, 
+                       vmax =255,interpolation='none')
+    axs[plt_no].set_xticks([])
+    axs[plt_no].set_yticks([])
+    axs[plt_no].set_xlabel(f'frame rate = {fps}', fontproperties=sub_titles)
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+
+
 def count_action_potentials(step_c_file, title,fig,axs, plt_no):
     pre_f =step_c_file[0]
 #    post_f = step_c_file[1]
@@ -253,7 +269,8 @@ def count_action_potentials(step_c_file, title,fig,axs, plt_no):
     for i,vm in enumerate(vms):
         axs[plt_no].plot(t,vm, label=f'Trial no. {i}')
     axs[plt_no].set_ylim(-80,60)
-    axs[plt_no].set_xlabel('time (s)')
+    axs[plt_no].set_ylabel('cell response (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
  #   axs[plt_no].legend(loc='upper center', 
  #                      bbox_to_anchor=(0.5, -0.15),
@@ -267,7 +284,8 @@ def input_res(input_r, title,fig,axs, plt_no):
     for i, vm in enumerate(vms):
         axs[plt_no].plot(t,vm, label=f'trial no. {i}')
     axs[plt_no].set_ylim(-75, -55)
-    axs[plt_no].set_xlabel('time (s)')
+    axs[plt_no].set_ylabel('cell response (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
 
 def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
@@ -324,10 +342,10 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
                        fancybox=True,
                        title="frame numbers")
 
-def plot_summary(cell, outdir):
+def plot_summary(cell, images, outdir):
     cell_id = str(cell.stem)
     abf_list = list_files(cell)
-    outdir = outdir/'scatter_po_vs_pat'
+    outdir = outdir/'summary_plots'
     outdir.mkdir(exist_ok=True, parents=True)
     plot_name = f'{str(outdir)}/{cell_id}.png'
     sorted_f_list = pre_post_sorted(abf_list)
@@ -336,7 +354,8 @@ def plot_summary(cell, outdir):
     pprint(f'pre = {pre_f_list} , post = {post_f_list}')
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
-    fig, axs = plt.subplots(2,3, figsize = (20,10))
+    #fig, axs = plt.subplots(2,3, figsize = (20,10))
+    fig, axs = plt.subplots(3,3, figsize = (20,20))
     axs=axs.flatten()
     pre_post_plot(paired_list[0], 'points', fig, axs, 0)
     pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
@@ -344,9 +363,11 @@ def plot_summary(cell, outdir):
     peak_comapre(paired_list[1],'pattern', fig, axs, 3)
     count_action_potentials(paired_list[4], 'Cell firing',fig,axs, 4)  
     input_res(paired_list[3], 'series resistance',fig,axs, 5)
+    image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
+    image_plot(images[1], 'slice with only IR', fig, axs, 7)
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
-    plt.subplots_adjust(hspace=1)
+    plt.subplots_adjust(hspace=.8)
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
 
@@ -368,17 +389,21 @@ def channel_name_to_index(reader, channel_name):
         if channel_name == signal_channel[0]:
             return int(signal_channel[1])
 def main(**kwargs):
+#    sprot.main(**kwargs)
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
+    i = Path(kwargs['image_path'])
     outdir = p/'result_plots'
     outdir.mkdir(exist_ok=True, parents=True)
     cells = list_folder(p)
-    pprint(cells)
+    #pprint(cells)
+    images = image_files(i)
+    print(images)
 #    cell_id = str(p/../).split('/')[-1]
     print(f'plot saving folder = {outdir}')
     for cell in cells:
         print(f'cell  = {cell.stem}')
-        plot_summary(cell, outdir)
+        plot_summary(cell, images, outdir)
 #    abf_list = list_files(cell)
 #    p_files = pattern_files(c)
 #    plot_name = f'{str(outdir)}/{cell_id}.png'
@@ -410,6 +435,10 @@ if __name__  == '__main__':
                         , required = False,default ='./', type=str
                         , help = 'path of folder with polygon'
                         'pattern files '
+                       )
+    parser.add_argument('--image-path', '-i'
+                        , required = False, default ='./', type=str
+                        , help = 'path to image data with slice image'
                        )
 
     parser.parse_args(namespace=args_)

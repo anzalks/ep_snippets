@@ -286,7 +286,7 @@ def plot_all_cannels(file_name,chanel_name,plt_no, fig, axs, frames, zoom):
 def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
-    outdir = p/'results'
+    outdir = p/'result_plots/individual_protocols'
     outdir.mkdir(exist_ok=True,parents=True)
     abf_list = list_files(p)
     p_files = pattern_files(c)
@@ -322,16 +322,16 @@ def main(**kwargs):
 #                continue
 
             if title=='Points':
-                #xlim = [1.25,11.25]
-                xlim = [6.3,6.7]
+                xlim = [1.25,11.25]
+                #xlim = [6.3,6.7]
             elif title=='Patterns':
-                #xlim = [0.8,11]
-                xlim = [4,4.5]
+                xlim = [0.8,11]
+                #xlim = [4,4.5]
             elif title=='Training pattern':
-                #axs[1].set_ylim(-70,60)
-                axs[1].set_ylim(-80,-40)
-                #xlim = left=0
-                xlim=[0.325,0.425]
+                axs[1].set_ylim(-70,60)
+                #axs[1].set_ylim(-80,-40)
+                xlim = left=0
+                #xlim=[0.325,0.425]
                 for i in range(5):
                     print(f'range = ({i})' )
                     if i>0:
