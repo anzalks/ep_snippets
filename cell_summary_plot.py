@@ -372,7 +372,7 @@ def plot_summary(cell, images, outdir):
     image_plot(images[1], 'slice with only IR', fig, axs, 7)
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
-    plt.subplots_adjust(hspace=.8)
+    plt.subplots_adjust(hspace=.8, top=0.95)
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
 
