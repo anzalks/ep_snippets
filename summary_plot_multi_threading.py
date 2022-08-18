@@ -317,28 +317,27 @@ def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
                        fancybox=True,
                        title="frame presentation")
 
-
-
 def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)
     post = peak_event(post_f)
+    x_y_lim =np.max(np.maximum(pre,post))+2 
     indices = np.arange(0,len(pre), 1)
     if len(indices)>11:
         n_col = 8
     else:
         n_col=5
     #print(f'indices = {indices}')
-    cmap = cm.get_cmap('jet', len(indices))
-    cmap.set_under('gray')
+#    cmap = cm.get_cmap('jet', len(indices))
+#    cmap.set_under('gray')
     for i in  indices :
         axs[plt_no].scatter(pre[i],post[i], label =i+1)
 #    axs[plt_no].scatter(pre,post, c=indices, cmap=cmap, vmin=0, 
 #                        vmax=indices.max())
-    axs[plt_no].set_xlim(-1,30)
-    axs[plt_no].set_ylim(-1,30)
-    axs[plt_no].plot([-1,30], [-1,30], linestyle='--', color='k')
+    axs[plt_no].set_xlim(-1,x_y_lim)
+    axs[plt_no].set_ylim(-1,x_y_lim)
+    axs[plt_no].plot([-1,x_y_lim], [-1,x_y_lim], linestyle='--', color='k')
     axs[plt_no].set_xlabel('Pre response (mV)', fontproperties=sub_titles)
     axs[plt_no].set_ylabel('Post reponse in (mV)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
@@ -414,25 +413,9 @@ def main(**kwargs):
         processes.append(p_)
     for p_ in processes:
         p_.join()
-#        print(f'cell  = {cell.stem}')
-#        plot_summary(cell, images, outdir)
-#    abf_list = list_files(cell)
-#    p_files = pattern_files(c)
-#    plot_name = f'{str(outdir)}/{cell_id}.png'
-#    sorted_f_list = pre_post_sorted(abf_list)
-#    pre_f_list = sorted_f_list[0]
-#    post_f_list = sorted_f_list[1]
-##    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
-#    paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
-#    pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
-#    fig, axs = plt.subplots(1,2, figsize = (15,5))
-#    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
-#    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
-#    plt.suptitle(f'cell ID = {cell_id}', 
-#                 fontproperties=main_title)
-##    plt.show()
-#    fig.savefig(plot_name, bbox_inches='tight')
-#
+
+
+
 
 if __name__  == '__main__':
     import argparse
