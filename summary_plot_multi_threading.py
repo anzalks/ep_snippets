@@ -15,8 +15,8 @@ import seaborn as sns
 import trace_pattern_plot as sprot
 import matplotlib.image as mpimg
 from PIL import Image
+import multiprocessing
 import time
-
 
 class Args: pass 
 args_ = Args()
@@ -398,7 +398,7 @@ def main(**kwargs):
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     i = Path(kwargs['image_path'])
-    outdir = p/'result_plots'
+    outdir = p/'result_plots_multi'
     outdir.mkdir(exist_ok=True, parents=True)
     cells = list_folder(p)
     #pprint(cells)
@@ -406,9 +406,16 @@ def main(**kwargs):
     print(images)
 #    cell_id = str(p/../).split('/')[-1]
     print(f'plot saving folder = {outdir}')
+
+    processes = []
     for cell in cells:
-        print(f'cell  = {cell.stem}')
-        plot_summary(cell, images, outdir)
+        p_ = multiprocessing.Process(target=plot_summary,args=[cell,images,outdir])
+        p_.start()
+        processes.append(p_)
+    for p_ in processes:
+        p_.join()
+#        print(f'cell  = {cell.stem}')
+#        plot_summary(cell, images, outdir)
 #    abf_list = list_files(cell)
 #    p_files = pattern_files(c)
 #    plot_name = f'{str(outdir)}/{cell_id}.png'
@@ -447,7 +454,7 @@ if __name__  == '__main__':
                        )
 
     parser.parse_args(namespace=args_)
-    ts = time.time()
+    ts =time.time()
     main(**vars(args_)) 
-    tf = time.time()
-    print(f'total run time = {tf-ts} (s)')
+    tf =time.time()
+    print(f'total time = {tf-ts} (s)')

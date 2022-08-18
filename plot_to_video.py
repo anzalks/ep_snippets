@@ -15,8 +15,7 @@ import seaborn as sns
 import trace_pattern_plot as sprot
 import matplotlib.image as mpimg
 from PIL import Image
-import time
-
+from matplotlib.animation import PillowWriter
 
 class Args: pass 
 args_ = Args()
@@ -447,7 +446,4 @@ if __name__  == '__main__':
                        )
 
     parser.parse_args(namespace=args_)
-    ts = time.time()
     main(**vars(args_)) 
-    tf = time.time()
-    print(f'total run time = {tf-ts} (s)')
