@@ -57,13 +57,31 @@ def image_files(i):
     f_list.sort()
     return f_list
 
+def find_ttl_start(trace, N):
+    data = np.array(trace)
+    data -= data.min()
+    data /= data.max()
+    pulses = []
+    for i, x in enumerate(data[::N]):
+        if (i + 1) * N >= len(data):
+            break
+        y = data[(i+1)*N]
+        if x < 0.2 and y > 0.75:
+            pulses.append(i*N)
+    return pulses
+
+def channel_name_to_index(reader, channel_name):
+    for signal_channel in reader.header['signal_channels']:
+        if channel_name == signal_channel[0]:
+            return int(signal_channel[1])
+
 def training_finder(f_name):
     f = str(f_name)
     reader = nio.AxonIO(f)
     protocol_name = reader._axon_info['sProtocolPath']
     protocol_name = str(protocol_name).split('\\')[-1]
     protocol_name = protocol_name.split('.')[-2]
-#    print(f'protocol name = {protocol_name}')
+    print(f'protocol name = {protocol_name}')
     if 'training' in protocol_name:
         f_name= f_name
     elif 'Training' in protocol_name:
@@ -76,20 +94,25 @@ def training_finder(f_name):
     return f_name 
 
 def pre_post_sorted(f_list):
+    found_train=False
     for f_name in f_list:
         training_f = training_finder(f_name)
         print(f'parsed prot train = {training_f}')
-        if training_f != None:
+        if ((training_f != None) and (found_train==False)):
             training_indx = f_list.index(training_f)
+            # training indx for post will have first element as the training protocol trace
             pre = f_list[:training_indx]
-            post = f_list[training_indx+1:]
-#            pprint(f'training file - {training_f} , indx = {training_indx} '
-#                   f'pre file ={pre} '
-#                   f'post file = {post} '
-#                  )
+            post = f_list[training_indx:]
+            pprint(f'training file - {training_f} , indx = {training_indx} '
+                f'pre file ={pre} '
+                f'post file = {post} '
+                )
+            found_train = True
+        elif ((training_f != None) and (found_train==True)):
+            no_c_train = f_name
         else:
             pre_f_none, post_f_none = None, None
-    return [pre, post, pre_f_none, post_f_none ]
+    return [pre, post, no_c_train, pre_f_none, post_f_none ]
 
 def protocol_tag(file_name):
     f = str(file_name)
@@ -104,6 +127,9 @@ def protocol_tag(file_name):
         print('pattern protocol')
         title = 'Patterns'
     elif 'Training' in protocol_name:
+        print('training')
+        title = 'Training pattern'
+    elif 'training' in protocol_name:
         print('training')
         title = 'Training pattern'
     elif 'RMP' in protocol_name:
@@ -128,7 +154,7 @@ def file_pair_pre_pos(pre_list,post_list):
     step_current = []
     for pre in pre_list:
         tag = protocol_tag(pre)
-        print(f' tag on the file ={tag}')
+#        print(f' tag on the file ={tag}')
         if tag=='Points':
             point.append(pre)
         elif tag=='Patterns':
@@ -188,7 +214,7 @@ def cell_trace(file_name):
         cell_trace_all.append(trace) 
         t = np.linspace(0,float(tf-ti),len(trace))
     cell_  = (t,cell_trace_all)
-    print(cell_)
+#    print(cell_)
     return cell_
 
 
@@ -293,6 +319,18 @@ def input_res(input_r, title,fig,axs, plt_no):
     axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
 
+def training_plot(training_f, title,fig,axs, plt_no):
+    pre_f = training_f
+    cell_ = cell_trace(pre_f)
+    t= cell_[0]
+    vms = cell_[1]
+    for i, vm in enumerate(vms):
+        axs[plt_no].plot(t,vm, label=f'trial no. {i}')
+    axs[plt_no].set_ylim(-80, 50)
+    axs[plt_no].set_ylabel('cell response (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+
 def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
@@ -353,13 +391,17 @@ def plot_summary(cell, images, outdir):
     outdir.mkdir(exist_ok=True, parents=True)
     plot_name = f'{str(outdir)}/{cell_id}.png'
     sorted_f_list = pre_post_sorted(abf_list)
+#    print(f'pre post sorted list function result ={sorted_f_list}')
     pre_f_list = sorted_f_list[0]
-    post_f_list = sorted_f_list[1]
-    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
+    post_f_list = sorted_f_list[1][1:] # post sorted list has the training protocol as first element so skipping it
+    training_f = sorted_f_list[1][0]
+    no_c_train = sorted_f_list[2]
+#    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     #fig, axs = plt.subplots(2,3, figsize = (20,10))
-    fig, axs = plt.subplots(3,3, figsize = (20,20))
+    print(f' training protocol = {training_f}')
+    fig, axs = plt.subplots(5,2, figsize = (15,30))
     axs=axs.flatten()
     pre_post_plot(paired_list[0], 'points', fig, axs, 0)
     pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
@@ -369,29 +411,15 @@ def plot_summary(cell, images, outdir):
     input_res(paired_list[3], 'series resistance',fig,axs, 5)
     image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
     image_plot(images[1], 'slice with only IR', fig, axs, 7)
+    if training_f !=None:
+        training_plot(training_f, 'Response to training protocol', fig, axs, 8)
+        training_plot(no_c_train, 'Training response without current inj', fig, axs, 9)
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
     plt.subplots_adjust(hspace=.8, top=0.95)
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
 
-def find_ttl_start(trace, N):
-    data = np.array(trace)
-    data -= data.min()
-    data /= data.max()
-    pulses = []
-    for i, x in enumerate(data[::N]):
-        if (i + 1) * N >= len(data):
-            break
-        y = data[(i+1)*N]
-        if x < 0.2 and y > 0.75:
-            pulses.append(i*N)
-    return pulses
-
-def channel_name_to_index(reader, channel_name):
-    for signal_channel in reader.header['signal_channels']:
-        if channel_name == signal_channel[0]:
-            return int(signal_channel[1])
 def main(**kwargs):
 #    sprot.main(**kwargs)
     p = Path(kwargs['abf_path'])
@@ -402,9 +430,9 @@ def main(**kwargs):
     cells = list_folder(p)
     #pprint(cells)
     images = image_files(i)
-    print(images)
+#    print(images)
 #    cell_id = str(p/../).split('/')[-1]
-    print(f'plot saving folder = {outdir}')
+#    print(f'plot saving folder = {outdir}')
 
     processes = []
     for cell in cells:
@@ -413,8 +441,6 @@ def main(**kwargs):
         processes.append(p_)
     for p_ in processes:
         p_.join()
-
-
 
 
 if __name__  == '__main__':
