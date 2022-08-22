@@ -260,7 +260,6 @@ def peak_event(file_name):
     cell_trace  = np.average(cell_trace_all, axis =0)
     cell_trace_base_line = np.mean(cell_trace[0:2000] )
     cell_trace_av = cell_trace - cell_trace_base_line
-    cell_trace_b_sub = cell_trace_all-cell_trace_base_line
 #    print(f' baseline = {cell_trace_av}')
     #print(ttl_xi[0])
     #print(ttl_xf[0])
@@ -268,11 +267,16 @@ def peak_event(file_name):
     events = []
     for i,ti in enumerate(ttl_xi): 
         event_av.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
-        pattern = []
-        for n, ni in enumerate(cell_trace_all):
-            pattern.append(np.max(ni[ttl_xi[i]:ttl_xf[i]]))
-        events.append(pattern)
+        events.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]], keepdims=True))
+    print(file_id)
+    pprint(f'events form = {events}, event shape = {np.shape(events)}')
     return [event_av, events]
+#    print(cell_trace_av[ttl_xi[0]],cell_trace_av[ttl_xf[0]])
+#    events = []
+#    for i in ttl_xi:
+#        for j in ttl_xf:
+#            events.append(cell_trace_av[i,j])
+#    print(events)
 
 def image_plot(img_path, title, fig, axs, plt_no):
     fps = str(img_path).split('_')
@@ -335,25 +339,12 @@ def peak_dist_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)[1]
-    post= peak_event(post_f)[1]
-    g = "green"
-    r = "red"
-    axs[plt_no].boxplot(pre, patch_artist=True,
-                       boxprops=dict(facecolor=g, color=g))
-    axs[plt_no].boxplot(post, patch_artist=True,
-                       boxprops=dict(facecolor=r, color=r))
+    post = peak_event(post_f)[1]
+    data = [pre, post]
+    axs[plt_no].boxplot(data)
     axs[plt_no].set_ylabel('Cell response to patterns (mV)',
                            fontproperties=sub_titles)
-    axs[plt_no].legend(ncol =3, loc='upper center', 
-                       bbox_to_anchor=(0.5, -0.2),
-                       fancybox=True,
-                       title="frame presentation")
-
-
-
-
-
-    #axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
 
 def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]

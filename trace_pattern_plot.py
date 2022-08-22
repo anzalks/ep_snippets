@@ -161,43 +161,6 @@ def channel_name_to_index(reader, channel_name):
         if channel_name == signal_channel[0]:
             return int(signal_channel[1])
 
-#def channel_to_trace(file_name,channel_id):
-#    f = str(file_name)
-#    reader = nio.AxonIO(f)
-#    channels = reader.header['signal_channels']
-#    chan_count = len(channels)
-#    file_id = file_name.stem
-#    print(f'channel count = {chan_count}')
-#    if chan_count > 1:
-#        block  = reader.read_block(signal_group_mode='split-all')
-#        segments = block.segments
-#        sample_trace = segments[0].analogsignals[0]
-#        sampling_rate = sample_trace.sampling_rate
-#        ti = sample_trace.t_start
-#        tf = sample_trace.t_stop
-#        unit = str(sample_trace.units).split()[1]
-#        print(ti, tf)
-#        trace_average = []
-#        for s, segment in enumerate(segments):
-#            feild_id = channel_name_to_index(reader,channel_id)
-#            analogsignals = segment.analogsignals[feild_id]
-#            trace = np.array(analogsignals)
-#            trace_average.append(trace)
-#            print(f'length of trace = {len(trace)}')
-#            t = np.linspace(0,float(tf-ti),len(trace))
-#            plt.plot(t,trace,alpha=0.7, label = f'trace-{s}')
-#        trace_average = np.mean(trace_average, axis=0)
-#        plt.plot(t, trace_average, color='r', label = 'average trace')
-#        plt.title(f'{file_id} chan count ={chan_count}')
-#        plt.legend(loc ="upper right")
-#        plt.ylabel(unit)
-#        plt.xlabel('t(s)')
-#        plt.show(block=False)
-#        plt.pause(0.5)
-#        plt.close()
-#        print(f' length of trace av = {len(trace_average)}')
-#        print(trace_average)
-
 def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
     f = str(file_name)
     reader = nio.AxonIO(f)
@@ -258,7 +221,7 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
                              color='k',linewidth=0.25,
                              label = 'trial average')
         elif channel_name =='Field':
-            axs[plt_no].set_ylim(0,2)
+            axs[plt_no].set_ylim(-1.5,1.5)
         else:
             y_u = np.max(trace_average)
             y_l = np.min(trace_average)
@@ -323,7 +286,7 @@ def main_plot(f_name,p_files,outdir):
             #xlim = [4,4.5]
         elif title=='Training pattern':
 #            print('************** training pattern plot')
-            axs[1].set_ylim(-70,60)
+            axs[1].set_ylim(-80,60)
             #axs[1].set_ylim(-80,-40)
             xlim = left=0
             #xlim=[0.325,0.425]
