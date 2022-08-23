@@ -1,5 +1,5 @@
 __author__           = "Anzal KS"
-__copyright__        = "Copyright 2019-, Anzal KS"
+__copyright__        = "Copyright 2022-, Anzal KS"
 __maintainer__       = "Anzal KS"
 __email__            = "anzalks@ncbs.res.in"
 from pathlib import Path
@@ -260,6 +260,7 @@ def peak_event(file_name):
     cell_trace  = np.average(cell_trace_all, axis =0)
     cell_trace_base_line = np.mean(cell_trace[0:2000] )
     cell_trace_av = cell_trace - cell_trace_base_line
+    cell_trace_b_sub = cell_trace_all-cell_trace_base_line
 #    print(f' baseline = {cell_trace_av}')
     #print(ttl_xi[0])
     #print(ttl_xf[0])
@@ -267,16 +268,11 @@ def peak_event(file_name):
     events = []
     for i,ti in enumerate(ttl_xi): 
         event_av.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
-        events.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]], keepdims=True))
-    print(file_id)
-    pprint(f'events form = {events}, event shape = {np.shape(events)}')
+        pattern = []
+        for n, ni in enumerate(cell_trace_all):
+            pattern.append(np.max(ni[ttl_xi[i]:ttl_xf[i]]))
+        events.append(pattern)
     return [event_av, events]
-#    print(cell_trace_av[ttl_xi[0]],cell_trace_av[ttl_xf[0]])
-#    events = []
-#    for i in ttl_xi:
-#        for j in ttl_xf:
-#            events.append(cell_trace_av[i,j])
-#    print(events)
 
 def image_plot(img_path, title, fig, axs, plt_no):
     fps = str(img_path).split('_')
@@ -339,12 +335,22 @@ def peak_dist_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)[1]
-    post = peak_event(post_f)[1]
-    data = [pre, post]
-    axs[plt_no].boxplot(data)
+    post= peak_event(post_f)[1]
+    g = "green"
+    r = "red"
+    b1=axs[plt_no].boxplot(pre, patch_artist=True,
+                           boxprops=dict(facecolor=g, color=g))
+    b2=axs[plt_no].boxplot(post, patch_artist=True,
+                           boxprops=dict(facecolor=r, color=r))
+    axs[plt_no].set_title(f'distribution of response over trials for {title}',
+                          fontproperties=sub_titles)
     axs[plt_no].set_ylabel('Cell response to patterns (mV)',
                            fontproperties=sub_titles)
-    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].legend([b1["boxes"][0], b2["boxes"][0]], ['pre', 'post'],
+                       ncol =2, loc='upper center',
+                       bbox_to_anchor=(0.5, -0.2),
+                       fancybox=True)
+#    axs[plt_no].set_title(title, fontproperties=sub_titles)
 
 def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
@@ -364,7 +370,7 @@ def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
         axs[plt_no].scatter(post_x[4],post[4], color='k', label='trained_pat')
     axs[plt_no].set(xlabel=None)
     axs[plt_no].set_xticks([])
-    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_title(f' average response for {title}', fontproperties=sub_titles)
     axs[plt_no].legend(ncol =3, loc='upper center', 
                        bbox_to_anchor=(0.5, -0.2),
                        fancybox=True,
@@ -416,7 +422,7 @@ def plot_summary(cell, images, outdir):
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     #fig, axs = plt.subplots(2,3, figsize = (20,10))
     print(f' training protocol = {training_f}')
-    fig, axs = plt.subplots(6,2, figsize = (15,40))
+    fig, axs = plt.subplots(3,4, figsize = (40,20))
     axs=axs.flatten()
     pre_post_plot(paired_list[0], 'points', fig, axs, 0)
     pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
@@ -437,31 +443,7 @@ def plot_summary(cell, images, outdir):
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
 
-def main(**kwargs):
-#    tpp.main(**kwargs)
-    p = Path(kwargs['abf_path'])
-    c = Path(kwargs['pattern_path'])
-    i = Path(kwargs['image_path'])
-    outdir = p/'result_plots_multi'
-    outdir.mkdir(exist_ok=True, parents=True)
-    cells = list_folder(p)
-    #pprint(cells)
-    images = image_files(i)
-#    print(images)
-#    cell_id = str(p/../).split('/')[-1]
-#    print(f'plot saving folder = {outdir}')
-
-    processes = []
-    for cell in cells:
-        p_ = multiprocessing.Process(target=plot_summary,args=[cell,images,outdir])
-        p_.start()
-        processes.append(p_)
-    for p_ in processes:
-        p_.join()
-
-
-if __name__  == '__main__':
-
+def main():
     # Argument parser.
     description = '''Analysis script for abf files.'''
     parser = argparse.ArgumentParser(description=description)
@@ -479,9 +461,36 @@ if __name__  == '__main__':
                         , help = 'path to image data with slice image'
                        )
 
-    parser.parse_args(namespace=args_)
+#    parser.parse_args(namespace=args_)
+    args = parser.parse_args()
+    #To run the individual trace plots in one go activate below line
+#    tpp.main(**kwargs)
+    p = Path(args.abf_path)
+    c = Path(args.pattern_path)
+    i = Path(args.image_path)
+    outdir = p/'result_plots_multi'
+    outdir.mkdir(exist_ok=True, parents=True)
+    cells = list_folder(p)
+    #pprint(cells)
+    images = image_files(i)
+#    print(images)
+#    cell_id = str(p/../).split('/')[-1]
+#    print(f'plot saving folder = {outdir}')
+
+    processes = []
+    for cell in cells:
+        p_ = multiprocessing.Process(target=plot_summary,args=[cell,images,outdir])
+        p_.start()
+        processes.append(p_)
+        #To print the processing ID and process
+#        print('current process:', p_.name, p_._identity)
+    for p_ in processes:
+        p_.join()
+
+
+if __name__  == '__main__':
     #timing the run with time.time
-    ts =time.time()
+#    ts =time.time()
     main(**vars(args_)) 
-    tf =time.time()
-    print(f'total time = {tf-ts} (s)')
+#    tf =time.time()
+#    print(f'total time = {tf-ts} (s)')

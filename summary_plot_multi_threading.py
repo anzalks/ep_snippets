@@ -1,5 +1,5 @@
 __author__           = "Anzal KS"
-__copyright__        = "Copyright 2019-, Anzal KS"
+__copyright__        = "Copyright 2022-, Anzal KS"
 __maintainer__       = "Anzal KS"
 __email__            = "anzalks@ncbs.res.in"
 from pathlib import Path
@@ -83,7 +83,7 @@ def training_finder(f_name):
     protocol_name = reader._axon_info['sProtocolPath']
     protocol_name = str(protocol_name).split('\\')[-1]
     protocol_name = protocol_name.split('.')[-2]
-    print(f'protocol name = {protocol_name}')
+#    print(f'protocol name = {protocol_name}')
     if 'training' in protocol_name:
         f_name= f_name
     elif 'Training' in protocol_name:
@@ -99,21 +99,21 @@ def pre_post_sorted(f_list):
     found_train=False
     for f_name in f_list:
         training_f = training_finder(f_name)
-        print(f'parsed prot train = {training_f}')
+#        print(f'parsed prot train = {training_f}')
         if ((training_f != None) and (found_train==False)):
             training_indx = f_list.index(training_f)
             # training indx for post will have first element as the training protocol trace
             pre = f_list[:training_indx]
             post = f_list[training_indx:]
-            pprint(f'training file - {training_f} , indx = {training_indx} '
-                f'pre file ={pre} '
-                f'post file = {post} '
-                )
+#            pprint(f'training file - {training_f} , indx = {training_indx} '
+#                f'pre file ={pre} '
+#                f'post file = {post} '
+#                )
             found_train = True
         elif ((training_f != None) and (found_train==True)):
             no_c_train = f_name
         else:
-            pre_f_none, post_f_none = None, None
+            pre_f_none, post_f_none, no_c_train = None, None, None
     return [pre, post, no_c_train, pre_f_none, post_f_none ]
 
 def protocol_tag(file_name):
@@ -217,10 +217,7 @@ def cell_trace(file_name):
         t = np.linspace(0,float(tf-ti),len(trace))
     cell_  = (t,cell_trace_all)
 #    print(cell_)
-    return cell_
-
-
-
+    return [cell_, sampling_rate]
 
 def peak_event(file_name):
     f = str(file_name)
@@ -244,7 +241,6 @@ def peak_event(file_name):
         cell_trace_all.append(trace) 
         t = np.linspace(0,float(tf-ti),len(trace))
 #    print (f'IN0 = {cell_trace_all}')
-
     for s, segment in enumerate(segments):
         cell = channel_name_to_index(reader,'FrameTTL')
         analogsignals = segment.analogsignals[cell]
@@ -269,10 +265,37 @@ def peak_event(file_name):
     for i,ti in enumerate(ttl_xi): 
         event_av.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
         pattern = []
-        for n, ni in enumerate(cell_trace_all):
+        for n, ni in enumerate(cell_trace_b_sub):
             pattern.append(np.max(ni[ttl_xi[i]:ttl_xf[i]]))
         events.append(pattern)
     return [event_av, events]
+
+def summate_points(points_file):
+    point_events = peak_event(points_file)[1]
+    point_events = np.mean(point_events,axis=1)
+    p1= np.sum(point_events[0:5])
+    p2= np.sum(point_events[5:10])
+    p3= np.sum(point_events[15:20])
+    p4= np.sum(point_events[20:25])
+    p5= np.sum(point_events[25:30])
+    p6= np.sum(np.hstack((point_events[30:34],point_events[25])))
+    p7= np.sum(np.hstack((point_events[34:38],point_events[27])))
+    p8= np.sum(point_events[10:15])
+    p9= np.sum(np.hstack((point_events[38:40],point_events[28:31])))
+    p10= np.sum( np.hstack((point_events[40:],point_events[26:29])))
+    sum_of_points = (p1,p2,p3,p4,p5,p6,p7,p8,p9,p10)
+    #np.array(summate_points)
+    print(f'length of summated points = {len(sum_of_points)}')
+    return sum_of_points
+
+def series_res_measure(cell_trace,injected_current,sampling_rate):
+    trace = np.transpose(np.mean(cell_trace,axis=0))[0]
+    vl= np.mean(trace[int(0.45*sampling_rate):int(0.55*sampling_rate)])
+    vb= np.mean(trace[int(0*sampling_rate):int(0.15*sampling_rate)])
+    v = vb-vl
+    print(f'voltage mean ={v}')
+    series_r = (v/injected_current)*1000
+    return series_r
 
 def image_plot(img_path, title, fig, axs, plt_no):
     fps = str(img_path).split('_')
@@ -294,7 +317,7 @@ def image_plot(img_path, title, fig, axs, plt_no):
 def count_action_potentials(step_c_file, title,fig,axs, plt_no):
     pre_f =step_c_file[0]
 #    post_f = step_c_file[1]
-    cell_ = cell_trace(pre_f)
+    cell_ = cell_trace(pre_f)[0]
     t = cell_[0]
     vms = cell_[1]
     for i,vm in enumerate(vms):
@@ -309,19 +332,24 @@ def count_action_potentials(step_c_file, title,fig,axs, plt_no):
  #                      title="Trial number")
 def input_res(input_r_file, title,fig,axs, plt_no):
     pre_f = input_r_file[0]
-    cell_ = cell_trace(pre_f)
+    cell_data = cell_trace(pre_f)
+    cell_=cell_data[0]
+    sampling_rate = cell_data[1]
+    injected_current= -20 #pA
     t= cell_[0]
     vms = cell_[1]
+    series_r = series_res_measure(vms,injected_current,sampling_rate)
+    series_r=np.round(series_r)
     for i, vm in enumerate(vms):
         axs[plt_no].plot(t,vm, label=f'trial no. {i}')
-    axs[plt_no].set_ylim(-75, -55)
+    axs[plt_no].set_ylim(-80, -55)
     axs[plt_no].set_ylabel('cell response (mV)', fontproperties=sub_titles)
     axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
-    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_title(f'{title}: {series_r} MOhm', fontproperties=sub_titles)
 
-def training_plot(training_f, title,fig,axs, plt_no):
+def training_trace_plot(training_f, title,fig,axs, plt_no):
     pre_f = training_f
-    cell_ = cell_trace(pre_f)
+    cell_ = cell_trace(pre_f)[0]
     t= cell_[0]
     vms = cell_[1]
     for i, vm in enumerate(vms):
@@ -336,26 +364,37 @@ def peak_dist_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)[1]
     post= peak_event(post_f)[1]
-    g = "green"
-    r = "red"
-    axs[plt_no].boxplot(pre, patch_artist=True,
-                       boxprops=dict(facecolor=g, color=g))
-    axs[plt_no].boxplot(post, patch_artist=True,
-                       boxprops=dict(facecolor=r, color=r))
+    b = "#377eb8"
+    o = "#ff7f00"
+    pk ="#f781bf"
+    max_peak = np.max(post)
+    min_peak = np.min(post)
+    b1=axs[plt_no].boxplot(pre, patch_artist=True,
+                           boxprops=dict(facecolor=b, color=b))
+    b2=axs[plt_no].boxplot(post, patch_artist=True,
+                           boxprops=dict(facecolor=o, color=o))
+    axs[plt_no].set_title(f'Distribution of response over trials for {title}',
+                          fontproperties=sub_titles)
     axs[plt_no].set_ylabel('Cell response to patterns (mV)',
                            fontproperties=sub_titles)
-    axs[plt_no].legend(ncol =3, loc='upper center', 
+    axs[plt_no].legend([b1["boxes"][0], b2["boxes"][0]], 
+                       ['pre', 'post'],
+                       ncol =2, loc='upper center',
                        bbox_to_anchor=(0.5, -0.2),
                        fancybox=True,
-                       title="frame presentation")
+                       title='Frame presentation')
+    if 'pattern'in title:
+        vl =axs[plt_no].vlines([4.5, 5.5], min_peak, max_peak,
+                               linestyles='dashed', colors='red')
+        axs[plt_no].legend([b1["boxes"][0], b2["boxes"][0], vl], 
+                           ['pre', 'post','trained pattern'],
+                           ncol =2, loc='upper center',
+                           bbox_to_anchor=(0.5, -0.2),
+                           fancybox=True,
+                           title='Frame presentation')
+#    axs[plt_no].set_title(title, fontproperties=sub_titles)
 
-
-
-
-
-    #axs[plt_no].set_title(title, fontproperties=sub_titles)
-
-def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
+def pre_vs_post_avresp(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)[0]
@@ -366,20 +405,20 @@ def peak_comapre(points_or_pattern_file_set,title, fig, axs, plt_no):
     #axs[plt_no].set_ylim(-1,3)
     axs[plt_no].set_ylabel('Cell response to patterns (mV)',
                            fontproperties=sub_titles)
-    axs[plt_no].scatter(pre_x,pre, color='g', label='pre')
-    axs[plt_no].scatter(post_x,post,color='r', label='post')
+    axs[plt_no].scatter(pre_x,pre, color='#377eb8', label='pre')
+    axs[plt_no].scatter(post_x,post,color='#ff7f00', label='post')
     if title=='pattern':
         axs[plt_no].scatter(pre_x[4],pre[4], color='k')
         axs[plt_no].scatter(post_x[4],post[4], color='k', label='trained_pat')
     axs[plt_no].set(xlabel=None)
     axs[plt_no].set_xticks([])
-    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_title(f'Average response for {title}', fontproperties=sub_titles)
     axs[plt_no].legend(ncol =3, loc='upper center', 
                        bbox_to_anchor=(0.5, -0.2),
                        fancybox=True,
-                       title="frame presentation")
+                       title="Frame presentation")
 
-def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
+def plasticity_test(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
     pre = peak_event(pre_f)[0]
@@ -408,6 +447,33 @@ def pre_post_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
                        fancybox=True,
                        title="frame numbers")
 
+def summation_plot(points_file,pattern_file,title,fig,axs,plt_no):
+    sum_of_points = summate_points(points_file)
+    #average response for patterns
+    pattern_response = peak_event(pattern_file)[0]
+    print(f'length of patterns = {len(pattern_response)}')
+    x_y_lim =np.max(np.maximum(sum_of_points,pattern_response))+2 
+    if 'post' in title:
+        axs[plt_no].scatter(sum_of_points,pattern_response, 
+                            color='#ff7f00', label ='Cell responses')
+        axs[plt_no].scatter(sum_of_points[4],pattern_response[4], 
+                            color='black', label= 'Response for trained pattern')
+    else:
+        axs[plt_no].scatter(sum_of_points,pattern_response, 
+                            label='cell Responses')
+        axs[plt_no].scatter(sum_of_points[4],pattern_response[4], 
+                            color = 'black', label ='Response for trained pattern')
+    axs[plt_no].set_xlim(-1,x_y_lim)
+    axs[plt_no].set_ylim(-1,x_y_lim)
+    axs[plt_no].plot([-1,x_y_lim], [-1,x_y_lim], linestyle='--', color='k')
+    axs[plt_no].set_xlabel('Summated response for points(mV)', fontproperties=sub_titles)
+    axs[plt_no].set_ylabel('Response for patterns (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].legend(ncol =3, loc='upper center', 
+                       bbox_to_anchor=(0.5, -0.2),
+                       fancybox=True,
+                       title="Patterns and summated points")
+
 def plot_summary(cell, images, outdir):
     cell_id = str(cell.stem)
     abf_list = list_files(cell)
@@ -424,22 +490,34 @@ def plot_summary(cell, images, outdir):
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     #fig, axs = plt.subplots(2,3, figsize = (20,10))
-    print(f' training protocol = {training_f}')
-    fig, axs = plt.subplots(6,2, figsize = (15,40))
+    #print(f' training protocol = {training_f}')
+    fig, axs = plt.subplots(7,2, figsize = (20,70))
     axs=axs.flatten()
-    pre_post_plot(paired_list[0], 'points', fig, axs, 0)
-    pre_post_plot(paired_list[1],'pattern', fig, axs, 1)
-    peak_comapre(paired_list[0],'points', fig, axs, 2)
-    peak_comapre(paired_list[1],'pattern', fig, axs, 3)
+    plasticity_test(paired_list[0], 'points', fig, axs, 0)
+    plasticity_test(paired_list[1],'pattern', fig, axs, 1)
+    pre_vs_post_avresp(paired_list[0],'points', fig, axs, 2)
+    pre_vs_post_avresp(paired_list[1],'pattern', fig, axs, 3)
     count_action_potentials(paired_list[4], 'Cell firing',fig,axs, 4)  
     input_res(paired_list[3], 'series resistance',fig,axs, 5)
-    image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
-    image_plot(images[1], 'slice with only IR', fig, axs, 7)
+    try:
+        image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
+        image_plot(images[1], 'slice with only IR', fig, axs, 7)
+    except:
+        print('no image data found')
     peak_dist_plot(paired_list[0], 'points', fig, axs, 10)
     peak_dist_plot(paired_list[1],'pattern', fig, axs, 11)
+    summation_plot(paired_list[0][0],paired_list[1][0],'summation pre training',
+                   fig,axs,12)
+    summation_plot(paired_list[0][1],paired_list[1][1],'summation post training',
+                   fig,axs,13)
     if training_f !=None:
-        training_plot(training_f, 'Response to training protocol', fig, axs, 8)
-        training_plot(no_c_train, 'Training response without current inj', fig, axs, 9)
+        training_trace_plot(training_f, 'Response to training protocol',
+                            fig, axs, 8)
+        try:
+            training_trace_plot(no_c_train, 'Training response without current inj',
+                                fig, axs, 9)
+        except:
+            print('no non training trace')
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
     plt.subplots_adjust(hspace=.8, top=0.95)
@@ -447,6 +525,7 @@ def plot_summary(cell, images, outdir):
     fig.savefig(plot_name, bbox_inches='tight')
 
 def main(**kwargs):
+    #To run the individual trace plots in one go activate below line
 #    tpp.main(**kwargs)
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
@@ -465,12 +544,13 @@ def main(**kwargs):
         p_ = multiprocessing.Process(target=plot_summary,args=[cell,images,outdir])
         p_.start()
         processes.append(p_)
+        #To print the processing ID and process
+#        print('current process:', p_.name, p_._identity)
     for p_ in processes:
         p_.join()
 
 
 if __name__  == '__main__':
-
     # Argument parser.
     description = '''Analysis script for abf files.'''
     parser = argparse.ArgumentParser(description=description)
@@ -489,8 +569,8 @@ if __name__  == '__main__':
                        )
 
     parser.parse_args(namespace=args_)
-    #timing the run with time.time
-    ts =time.time()
+#timing the run with time.time
+#    ts =time.time()
     main(**vars(args_)) 
-    tf =time.time()
-    print(f'total time = {tf-ts} (s)')
+#    tf =time.time()
+#    print(f'total time = {tf-ts} (s)')

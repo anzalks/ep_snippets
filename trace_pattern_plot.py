@@ -328,6 +328,7 @@ def main(**kwargs):
         p_=multiprocessing.Process(target=main_plot,args=[f_name,p_files,outdir])
         p_.start()
         processes.append(p_)
+        print('current process:', p_.name, p_._identity)
     for p_ in processes:
         p_.join()
 
