@@ -293,8 +293,8 @@ def series_res_measure(cell_trace,injected_current,sampling_rate):
     vl= np.mean(trace[int(0.45*sampling_rate):int(0.55*sampling_rate)])
     vb= np.mean(trace[int(0*sampling_rate):int(0.15*sampling_rate)])
     v = vb-vl
-    print(f'voltage mean ={v}')
     series_r = (v/injected_current)*1000
+    print(f'vl = {vl}, vb = {vb}, series resistance indvidual value = {series_r}')
     return series_r
 
 def image_plot(img_path, title, fig, axs, plt_no):
@@ -332,20 +332,30 @@ def count_action_potentials(step_c_file, title,fig,axs, plt_no):
  #                      title="Trial number")
 def input_res(input_r_file, title,fig,axs, plt_no):
     pre_f = input_r_file[0]
-    cell_data = cell_trace(pre_f)
-    cell_=cell_data[0]
-    sampling_rate = cell_data[1]
+    post_f = input_r_file[1]
+    trace_data_pre = cell_trace(pre_f)
+    trace_data_post = cell_trace(post_f)
+    cell_pre=trace_data_pre[0]
+    cell_post=trace_data_post[0]
+    sampling_rate = trace_data_pre[1]
     injected_current= -20 #pA
-    t= cell_[0]
-    vms = cell_[1]
-    series_r = series_res_measure(vms,injected_current,sampling_rate)
-    series_r=np.round(series_r)
-    for i, vm in enumerate(vms):
-        axs[plt_no].plot(t,vm, label=f'trial no. {i}')
+    t= cell_pre[0]
+    vms_pre = cell_pre[1]
+    series_r_pre = series_res_measure(vms_pre,injected_current,sampling_rate)
+    series_r_post = series_r_pre
+    vms_post = cell_post[1]
+    series_r_post = series_res_measure(vms_post,injected_current,sampling_rate)
+    series_r_post= series_r_post
+    series_r_f = np.round((series_r_post - series_r_pre),1)
+    print(f'series_r del = {series_r_f}')
+    for i, vm in enumerate(vms_pre):
+        axs[plt_no].plot(t, vm, color="#377eb8", label=f'trial no. {i}')
+    for i, vm in enumerate(vms_post):
+        axs[plt_no].plot(t, vm, color= "#ff7f00", label=f'trial no. {i}')
     axs[plt_no].set_ylim(-80, -55)
     axs[plt_no].set_ylabel('cell response (mV)', fontproperties=sub_titles)
     axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
-    axs[plt_no].set_title(f'{title}: {series_r} MOhm', fontproperties=sub_titles)
+    axs[plt_no].set_title(f'{title}: {series_r_f} MOhm', fontproperties=sub_titles)
 
 def training_trace_plot(training_f, title,fig,axs, plt_no):
     pre_f = training_f
@@ -491,14 +501,15 @@ def plot_summary(cell, images, outdir):
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     #fig, axs = plt.subplots(2,3, figsize = (20,10))
     #print(f' training protocol = {training_f}')
-    fig, axs = plt.subplots(7,2, figsize = (20,70))
+    fig, axs = plt.subplots(4,4, figsize = (40,35))
+    #fig, axs = plt.subplots(7,2, figsize = (20,70))
     axs=axs.flatten()
     plasticity_test(paired_list[0], 'points', fig, axs, 0)
     plasticity_test(paired_list[1],'pattern', fig, axs, 1)
     pre_vs_post_avresp(paired_list[0],'points', fig, axs, 2)
     pre_vs_post_avresp(paired_list[1],'pattern', fig, axs, 3)
     count_action_potentials(paired_list[4], 'Cell firing',fig,axs, 4)  
-    input_res(paired_list[3], 'series resistance',fig,axs, 5)
+    input_res(paired_list[3], 'series resistance change',fig,axs, 5)
     try:
         image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
         image_plot(images[1], 'slice with only IR', fig, axs, 7)
@@ -545,7 +556,7 @@ def main(**kwargs):
         p_.start()
         processes.append(p_)
         #To print the processing ID and process
-#        print('current process:', p_.name, p_._identity)
+        print('current process:', p_.name, p_.pid)
     for p_ in processes:
         p_.join()
 
