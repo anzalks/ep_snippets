@@ -369,6 +369,36 @@ def training_trace_plot(training_f, title,fig,axs, plt_no):
     axs[plt_no].set_xlabel('time (s)', fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
 
+def raw_peak_dist(points_or_pattern_file_set,title,fig,axs,plt_no):
+    pre_f = points_or_pattern_file_set[0]
+    post_f = points_or_pattern_file_set[1]
+    pre = np.transpose(peak_event(pre_f)[1])
+    post = np.transpose(peak_event(post_f)[1])
+    x = np.arange(1,(len(pre[0])+1),1)
+    print(f'____length of x = {len(x)} length of pre = {len(pre[0])}______')
+    #axs[plt_no].set_xlim(-1,3)
+    #axs[plt_no].set_ylim(-1,20)
+    axs[plt_no].set_ylabel('Cell response to patterns (mV)',
+                           fontproperties=sub_titles)
+    for i in range(len(pre)):
+        axs[plt_no].scatter(x,pre[i], color='#377eb8', label='pre')
+        if title=='pattern':
+            axs[plt_no].scatter(x[4],pre[i][4], color='k')
+    for i in range(len(post)):
+        axs[plt_no].scatter(x,post[i],color='#ff7f00', label='post')
+        if title=='pattern':
+            axs[plt_no].scatter(x[4],post[i][4], color='k', label='trained_pat')
+    axs[plt_no].set_xlabel('Frame number',
+                          fontproperties=sub_titles)
+   # axs[plt_no].set_xticks([])
+    axs[plt_no].set_title(f'Raw response for {title}', 
+                          fontproperties=sub_titles)
+    axs[plt_no].legend(ncol =3, loc='upper center', 
+                       bbox_to_anchor=(0.5, -0.2),
+                       fancybox=True,
+                       title="Frame presentation")
+
+
 def peak_dist_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
     pre_f = points_or_pattern_file_set[0]
     post_f = points_or_pattern_file_set[1]
@@ -521,6 +551,8 @@ def plot_summary(cell, images, outdir):
                    fig,axs,12)
     summation_plot(paired_list[0][1],paired_list[1][1],'summation post training',
                    fig,axs,13)
+    raw_peak_dist(paired_list[0],'points',fig,axs,14)
+    raw_peak_dist(paired_list[1],'pattern',fig,axs,15)
     if training_f !=None:
         training_trace_plot(training_f, 'Response to training protocol',
                             fig, axs, 8)
