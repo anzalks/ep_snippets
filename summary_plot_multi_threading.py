@@ -383,11 +383,11 @@ def raw_peak_dist(points_or_pattern_file_set,title,fig,axs,plt_no):
     for i in range(len(pre)):
         axs[plt_no].scatter(x,pre[i], color='#377eb8', label='pre')
         if title=='pattern':
-            axs[plt_no].scatter(x[4],pre[i][4], color='k')
+            axs[plt_no].scatter(x[4],pre[i][4],color='k')
     for i in range(len(post)):
         axs[plt_no].scatter(x,post[i],color='#ff7f00', label='post')
         if title=='pattern':
-            axs[plt_no].scatter(x[4],post[i][4], color='k', label='trained_pat')
+            axs[plt_no].scatter(x[4],post[i][4],color='r', label='trained_pat')
     axs[plt_no].set_xlabel('Frame number',
                           fontproperties=sub_titles)
    # axs[plt_no].set_xticks([])
