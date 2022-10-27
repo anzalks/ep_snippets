@@ -13,6 +13,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib import cm
 import seaborn as sns
 import trace_pattern_plot as tpp
+#import cell_health as ch
 import matplotlib.image as mpimg
 from PIL import Image
 import multiprocessing
@@ -219,6 +220,80 @@ def cell_trace(file_name):
 #    print(cell_)
     return [cell_, sampling_rate]
 
+def baseline_measure(file_name):
+    #1st 300 m, last 300ms
+    cell_trace_all = cell_trace(file_name)
+    sampling_rate = cell_trace_all[1]
+    trace =cell_trace_all[0]
+    trace = trace[1]
+    baseline = []
+    baseline_shift_perc = []
+    for i,t in enumerate(trace):
+        bl_i = np.mean(t[0:int(0.3*sampling_rate)])
+        baseline.append(bl_i)
+    baseline_av = np.mean(baseline,axis=0)
+    #print(f' baseline shift = {baseline_shift},'
+    #      f'average Bl_shift = {baseline_shift_av}' )
+    return [baseline,baseline_av]
+
+def series_res_measure_optical(file_name, title):
+    cell_trace_all = cell_trace(file_name)
+    sampling_rate = cell_trace_all[1]
+    trace = cell_trace_all[0]
+    trace = trace[1]
+    injected_current = -20 #pA
+    series_r = []
+    for i,t in enumerate(trace):
+        if title=='points':
+            bl = np.mean(t[int(11.7*sampling_rate):int(11.9*sampling_rate)])
+            dip = np.mean(t[int(12.3*sampling_rate):int(12.425*sampling_rate)])
+            del_v = dip-bl
+            r = (del_v/injected_current)*1000
+            #print(f'series_r_poin = {r} inside loop')
+            series_r.append(r)
+        elif title=='pattern':
+            bl = np.mean(t[int(11.4*sampling_rate):int(11.6*sampling_rate)])
+            dip = np.mean(t[int(11.8*sampling_rate):int(12*sampling_rate)])
+            del_v = dip-bl
+            r = (del_v/injected_current)*1000
+            #print(f'series_r_pat = {r} inside loop')
+            series_r.append(r)
+        else:
+            print(f'for file {file_name} something if off with timing of'
+                  f'-20pulse')
+    series_r_av = np.mean(series_r,axis=0)
+    #print(f'serie_r = {series_r} series_r_av = {series_r_av}')
+    return [series_r,series_r_av]
+
+def baseline_comapre_optical(file_name):
+    #1st 300 m, last 300ms
+    pre_f = file_name[0]
+    post_f = file_name[1]
+    pre = baseline_measure(pre_f)[1]
+    post = baseline_measure(post_f)[1]
+    print(f'pre_value in baseline {pre} mV')
+    bl_shift_pre_post = post-pre
+    baseline_shift_pre_post = round(bl_shift_pre_post,1)
+    print(f'rounded bl shift = {baseline_shift_pre_post}')
+    percentage_shift_bl = (baseline_shift_pre_post/pre)*100
+    percentage_shift_bl = round(percentage_shift_bl,1)
+    print (f' shift in base recording after and before ='
+           f' {baseline_shift_pre_post} mV')
+    print (f' %shift in base recording after and before = {percentage_shift_bl} %')
+    return percentage_shift_bl 
+
+def series_r_compare_optical(file_name,title):
+    pre_f = file_name[0]
+    post_f = file_name[1]
+    pre = series_res_measure_optical(pre_f,title)[1]
+    post = series_res_measure_optical(post_f,title)[1]
+    series_r_shift_pre_post = round((post -pre),1)
+    percentage_shift = round((series_r_shift_pre_post/pre)*100,1)
+    print (f' shift in sr recording after and before ='
+           f'{series_r_shift_pre_post} MOhm')
+    print (f'%  shift in sr recording after and before = {percentage_shift} %')
+    return percentage_shift
+
 def peak_event(file_name):
     f = str(file_name)
     reader = nio.AxonIO(f)
@@ -313,6 +388,45 @@ def image_plot(img_path, title, fig, axs, plt_no):
                            fontproperties=sub_titles)
     axs[plt_no].set_title(title, fontproperties=sub_titles)
 
+def baseline_compare_plot(file_name,title,fig,axs, plt_no):
+    pre_f = file_name[0]
+    post_f = file_name[1]
+    bl_pre = baseline_measure(pre_f)[0]
+    bl_post = baseline_measure(post_f)[0]
+    x_pre = np.arange(0,np.shape(bl_pre)[0],1)+1
+    x_post = np.arange(0,np.shape(bl_post)[0],1)+np.shape(bl_pre)[0]+1
+    axs[plt_no].set_ylim(-75,-55)
+    axs[plt_no].boxplot([bl_pre,bl_post],positions=[11,12])
+    axs[plt_no].scatter(x_pre,bl_pre,color="#377eb8", label='pre')
+    axs[plt_no].scatter(x_post,bl_post,color= "#ff7f00", label = 'post')
+    title = f'baselines for {title} pre & post'
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_ylabel('Membrane voltage (mV)', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel('repeats', fontproperties=sub_titles)
+    axs[plt_no].legend(ncol =3, loc='upper center', 
+                       bbox_to_anchor=(0.5, -0.2),
+                       fancybox=True,
+                       title="Base line membrane potential")
+
+def series_r_compare_plot(file_name,title,fig,axs, plt_no):
+    pre_f = file_name[0]
+    post_f = file_name[1]
+    bl_pre = series_res_measure_optical(pre_f,title)[0]
+    bl_post = series_res_measure_optical(post_f,title)[0]
+    x_pre = np.arange(0,np.shape(bl_pre)[0],1)+1
+    x_post = np.arange(0,np.shape(bl_post)[0],1)+np.shape(bl_pre)[0]+1
+    axs[plt_no].set_ylim(70,250)
+    axs[plt_no].boxplot([bl_pre,bl_post],positions=[11,12])
+    axs[plt_no].scatter(x_pre,bl_pre,color="#377eb8", label='pre')
+    axs[plt_no].scatter(x_post,bl_post,color= "#ff7f00", label='post')
+    title = f'input resistances  for {title} pre & post'
+    axs[plt_no].set_title(title, fontproperties=sub_titles)
+    axs[plt_no].set_ylabel('input resistance (MOhm)', fontproperties=sub_titles)
+    axs[plt_no].set_xlabel('repeats', fontproperties=sub_titles)
+    axs[plt_no].legend(ncol =3, loc='upper center', 
+                       bbox_to_anchor=(0.5, -0.2),
+                       fancybox=True,
+                       title="input resistance shift ")
 
 def count_action_potentials(step_c_file, title,fig,axs, plt_no):
     pre_f =step_c_file[0]
@@ -342,10 +456,8 @@ def input_res(input_r_file, title,fig,axs, plt_no):
     t= cell_pre[0]
     vms_pre = cell_pre[1]
     series_r_pre = series_res_measure(vms_pre,injected_current,sampling_rate)
-    series_r_post = series_r_pre
     vms_post = cell_post[1]
     series_r_post = series_res_measure(vms_post,injected_current,sampling_rate)
-    series_r_post= series_r_post
     series_r_f = np.round((series_r_post - series_r_pre),1)
     print(f'series_r del = {series_r_f}')
     for i, vm in enumerate(vms_pre):
@@ -528,10 +640,20 @@ def plot_summary(cell, images, outdir):
     no_c_train = sorted_f_list[2]
 #    pprint(f'pre = {pre_f_list} , post = {post_f_list}')
     paired_list = file_pair_pre_pos(pre_f_list, post_f_list)
+    bl_txt = '% shift in baseline '
+    ser_r_txt = '% shift in input resistance '
+    points_bl_shift = baseline_comapre_optical(paired_list[0])
+    bl_points_txt = bl_txt+ 'for points = '+ str(points_bl_shift)+' %'
+    patterns_bl_shift = baseline_comapre_optical(paired_list[1])
+    bl_patterns_txt = bl_txt+'for patterns = ' +str(points_bl_shift)+' %'
+    points_series_r_shift = series_r_compare_optical(paired_list[0],'points')
+    series_r_txt_point = ser_r_txt+'for points = '+str(points_series_r_shift)+'%'
+    pattern_series_r_shift = series_r_compare_optical(paired_list[1],'pattern')
+    series_r_txt_pattern = ser_r_txt+'for patterns ='+str(pattern_series_r_shift)+' %'
     #pprint(f'points = {paired_list[0]} , patterns = {paired_list[1]}')
     #fig, axs = plt.subplots(2,3, figsize = (20,10))
     #print(f' training protocol = {training_f}')
-    fig, axs = plt.subplots(4,4, figsize = (40,35))
+    fig, axs = plt.subplots(5,4, figsize = (40,35))
     #fig, axs = plt.subplots(7,2, figsize = (20,70))
     axs=axs.flatten()
     plasticity_test(paired_list[0], 'points', fig, axs, 0)
@@ -539,7 +661,10 @@ def plot_summary(cell, images, outdir):
     pre_vs_post_avresp(paired_list[0],'points', fig, axs, 2)
     pre_vs_post_avresp(paired_list[1],'pattern', fig, axs, 3)
     count_action_potentials(paired_list[4], 'Cell firing',fig,axs, 4)  
-    input_res(paired_list[3], 'series resistance change',fig,axs, 5)
+    try:
+        input_res(paired_list[3], 'input resistance change',fig,axs, 5)
+    except:
+        print('input_res recording file issue')
     try:
         image_plot(images[0], 'slice with fluorescence & IR', fig, axs, 6)
         image_plot(images[1], 'slice with only IR', fig, axs, 7)
@@ -553,6 +678,10 @@ def plot_summary(cell, images, outdir):
                    fig,axs,13)
     raw_peak_dist(paired_list[0],'points',fig,axs,14)
     raw_peak_dist(paired_list[1],'pattern',fig,axs,15)
+    baseline_compare_plot(paired_list[0],'points',fig,axs,16)
+    baseline_compare_plot(paired_list[1],'pattern',fig,axs,17)
+    series_r_compare_plot(paired_list[0],'points',fig,axs,18)
+    series_r_compare_plot(paired_list[1],'pattern',fig,axs,19)
     if training_f !=None:
         training_trace_plot(training_f, 'Response to training protocol',
                             fig, axs, 8)
@@ -564,12 +693,21 @@ def plot_summary(cell, images, outdir):
     plt.suptitle(f'cell ID = {cell_id}', 
                  fontproperties=main_title)
     plt.subplots_adjust(hspace=.8, top=0.95)
+    plt.text(0.3, 0, bl_points_txt, 
+             fontproperties=main_title,transform=plt.gcf().transFigure)
+    plt.text(0.3, -0.015, bl_patterns_txt, 
+             fontproperties=main_title,transform=plt.gcf().transFigure)
+    plt.text(0.3, -0.030, series_r_txt_point, 
+             fontproperties=main_title,transform=plt.gcf().transFigure)
+    plt.text(0.3, -0.045, series_r_txt_pattern, 
+             fontproperties=main_title,transform=plt.gcf().transFigure)
+
 #    plt.show()
     fig.savefig(plot_name, bbox_inches='tight')
 
 def main(**kwargs):
     #To run the individual trace plots in one go activate below line
-    tpp.main(**kwargs)
+    #tpp.main(**kwargs)
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     i = Path(kwargs['image_path'])

@@ -279,11 +279,13 @@ def main_plot(f_name,p_files,outdir):
 #                continue
 
         if title=='Points':
-            xlim = [1.2,11.25]
-            #xlim = [6.3,6.7]
+            xlim = [12,12.6]
+#            xlim = [1.2,11.25]
+#            xlim = [6.3,6.7]
         elif title=='Patterns':
-            xlim = [0.2,10]
-            #xlim = [4,4.5]
+            xlim = [11,12.5]
+#            xlim = [0.2,10]
+#            xlim = [4,4.5]
         elif title=='Training pattern':
 #            print('************** training pattern plot')
             axs[1].set_ylim(-80,60)

@@ -12,7 +12,7 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 from matplotlib.font_manager import FontProperties
 from matplotlib import cm
 import seaborn as sns
-import trace_pattern_plot as tpp
+import trace_pattern_plot_x_distributed as tpp
 import matplotlib.image as mpimg
 from PIL import Image
 import multiprocessing

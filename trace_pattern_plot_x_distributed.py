@@ -92,7 +92,7 @@ def proj_file_selector(file_name,p_files):
     if '12_points' in protocol_name:
         #print('point_protocol')
         for p in p_files:
-            if '42_points' in str(p):
+            if 'points_x_' in str(p):
                 pat_file = p
                 title = 'Points'
                 zoom = 0.6
@@ -100,7 +100,7 @@ def proj_file_selector(file_name,p_files):
     elif '7_patternsx' in protocol_name:
         #print('pattern protocol')
         for p in p_files:
-            if '10_patterns' in str(p):
+            if 'Patterns_x_distributed' in str(p):
                 pat_file = p
                 title = 'Patterns'
                 zoom = 1.5
@@ -108,7 +108,7 @@ def proj_file_selector(file_name,p_files):
     elif 'training' in protocol_name:
         print(f'training: {protocol_name}')
         for p in p_files:
-            if 'training_pattern' in str(p):
+            if 'training_file_x' in str(p):
                 pat_file = p
                 print(f'Training pattern file={p}')
                 title = 'Training pattern'
@@ -117,7 +117,7 @@ def proj_file_selector(file_name,p_files):
     elif 'Training' in protocol_name:
         print('training')
         for p in p_files:
-            if 'training_pattern' in str(p):
+            if 'training_file_x' in str(p):
                 pat_file = p
                 print(f'Training pattern file={p}')
                 title = 'Training pattern'

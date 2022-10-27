@@ -13,6 +13,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib import cm
 import seaborn as sns
 import trace_pattern_plot as tpp
+import cell_health as ch
 import matplotlib.image as mpimg
 from PIL import Image
 import multiprocessing
