@@ -1,0 +1,64 @@
+Var,Val,Comments
+animalID,'G614',
+sex,'F',
+dateofBirth,"datetime.date(2021, 10, 7)",
+dateofInj,"datetime.date(2021, 11, 7)",
+dateofExpt,"datetime.date(2021, 12, 23)",
+sliceThickness,400,
+site,"{'RC':1.9, 'ML':2.0, 'DV':1.5}"," from bregma, right hemisphere in rostrocaudal, mediolateral, and dorsoventral axes"
+injectionParams,"{'Pressure':10, 'pulseWidth':15, 'duration':25}"," picospritzer nitrogen pressure in psi, pulse width in millisecond, duration in minutes"
+virus,'ChR2', ChR2 (Addgene 18917) or ChETA (Addgene 35507)
+virusTitre,6E+12," GC/ml, after dilution"
+dilution,0.5, in PBS to make up the titre
+volumeInj,5e-4, approx volume in ml
+ageAtInj,(dateofInj	- dateofBirth),
+ageAtExp,(dateofExpt	- dateofBirth),
+incubation,(ageAtExp	- ageAtInj),
+objMag,40,object magnification at which projections are done.
+frameSize,"np.array([13032.25, 7419.2])"," frame size in um, with 1x magnification"
+gridSize,24, corresponds to pixel size of 13x8 µm
+squareSize,frameSize / (gridSize * objMag),
+isBatch,"datetime.date(2021, 7, 30)",
+ispH,7.29,
+isOsm,294, mOsm/kg H2O
+aCSFpH,7.40,
+aCSFOsm,310, mOsm/kg H2O
+gabaConc,2e-6," mol/litre, if gabazine experiments were done"
+cellID,'G61405',
+bathTemp,25,
+location,"{'optical_stim':'CA3', 0:'CA1', 1:'' }","usually, ch0: patch electrode, ch3: field electrode"
+clamp,'CC',clamp used for recording
+EorI,'E',
+unit,'mV',
+clampPotential,' ',
+datafile,'2021_12_23_0060_rec.abf', data file with _rec will be considered for the analysis
+polygonProtocol,'Baseline_10_patterns_5_T_1_1_3_3_5ms_1Hz_100perc.txt', projection frames in text format.
+intensity,100,
+pulseWidth,5,
+stimFreq,1, in Hz
+repeats,3, sweep repeats
+numPulses,10, a fixed number for all frequencies
+Pipette_resistance,3.5, pipette resistance used for the recording.
+exptTypes,"['GapFree','IR','CurrentStep','1sq20Hz','FreqSweep','LTMSeq','LTMRand','convergence', 'Rmp', 'Rin', 'Thresh', 'Pre_po', 'Pre_pat', 'Train',  'Pos_po', 'Pos_pat']",
+exptType,exptTypes[15],
+conditions,"['Control','Gabazine']",
+condition,conditions[0],
+Fs,2e4, sampling frequency
+signalScaling,1," usually 1, but sometimes the DAQ does not save current values in proper units"
+baselineSubtraction,True,
+baselineCriterion,0.1, baseline fluctuations of 10% are allowed
+DAQfilterBand,"[0, 10000]", from the clampex interface
+sweepDuration,"[0  , 12.500]", total duration of a sweep
+sweepBaselineEpoch,"[0  , 0.200]"," seconds, end of baseline time usually a small epoch before protocol in a trace."
+opticalStimEpoch,"[1.000, 11.000]", total time in a trace where the patterns are coming in.
+singlePulseEpoch,"[0.2, 0.4999]", not relevant
+pulseTrainEpoch,"[0.5, 1.6687]", not relevant
+frameChangeforFreqSweep,0.150, not relevant
+IRBaselineEpoch,"[0, 0.200]",same as sweep baseline
+IRpulseEpoch,"[0.200,0.550]", total step current epoch
+IRchargingPeriod,"[0.200, 0.500]", from the average charging period for the cell give a duration from the protocol used (Eg: 200ms out of 300ms -20pA pulse)
+IRsteadystatePeriod,"[0.500, 0.550]", from the average steady state period for the cell give a duration from the protocol used (Eg: 100ms out of 300ms -20pA pulse)
+interSweepInterval,nan," not important, wait period befoire next stimulation in seconds"
+filters,"{0:'',1:'bessel',2:'butter',3:'decimate'}", filter settings for  analysis
+filter,filters[0],
+filterHighCutoff,2e4,
