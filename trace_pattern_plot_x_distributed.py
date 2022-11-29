@@ -1,4 +1,4 @@
-s__author__           = "Anzal KS"
+__author__           = "Anzal KS"
 __copyright__        = "Copyright 2019-, Anzal KS"
 __maintainer__       = "Anzal KS"
 __email__            = "anzalks@ncbs.res.in"
@@ -214,12 +214,27 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
 #                    continue
         if channel_name =='IN0':
             #axs[plt_no].set_ylim(-75,-50)
-            axs[plt_no].set_ylim(-80,-40)
+            #axs[plt_no].set_ylim(-72,-58)
             axs[plt_no].set_title('Cell recording',
                                   fontproperties=sub_titles)
             axs[plt_no].plot(t, trace_average, 
                              color='k',linewidth=0.25,
                              label = 'trial average')
+            try:
+                y_u = np.max(trace_average[0:-40000])
+                y_l = np.min(trace_average[0:-40000])
+            except:
+                y_u = np.max(trace_average)
+                y_l = np.min(trace_average)
+            if y_u>-62:
+                y_u = y_u+1
+            else:
+                y_u = -62
+            if y_l < -68:
+                y_l =y_l-1
+            else:
+                y_l=-68
+            axs[plt_no].set_ylim(y_l,y_u)
         elif channel_name =='Field':
             axs[plt_no].set_ylim(-1.5,1.5)
         else:
@@ -279,10 +294,12 @@ def main_plot(f_name,p_files,outdir):
 #                continue
 
         if title=='Points':
-            xlim = [1,4.25]
+            #xlim = [1,4.2]
+            xlim =left=0
             #xlim = [6.3,6.7]
         elif title=='Patterns':
-            xlim = [0.2,8]
+            #xlim = [0.5,7.5]
+            xlim=left=0
             #xlim = [4,4.5]
         elif title=='Training pattern':
 #            print('************** training pattern plot')

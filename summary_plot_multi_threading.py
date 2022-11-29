@@ -329,7 +329,7 @@ def peak_event(file_name):
     ttl_xf = (ttl_xi+0.2*sampling_rate).astype(int)
     #print(len(ttl_xf- ttl_xi))
     cell_trace  = np.average(cell_trace_all, axis =0)
-    cell_trace_base_line = np.mean(cell_trace[0:2000] )
+    cell_trace_base_line = np.mean(cell_trace[100:300] )
     cell_trace_av = cell_trace - cell_trace_base_line
     cell_trace_b_sub = cell_trace_all-cell_trace_base_line
 #    print(f' baseline = {cell_trace_av}')

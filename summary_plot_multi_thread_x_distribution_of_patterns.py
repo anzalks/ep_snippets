@@ -190,11 +190,6 @@ def file_pair_pre_pos(pre_list,post_list):
     #      )
     return [point, pattern,rmp, InputR, step_current]
 
-def channel_name_to_index(reader, channel_name):
-    for signal_channel in reader.header['signal_channels']:
-        if channel_name == signal_channel[0]:
-            return int(signal_channel[1])
-
 def cell_trace(file_name):
     f = str(file_name)
     reader = nio.AxonIO(f)
@@ -254,7 +249,7 @@ def peak_event(file_name):
     ttl_xf = (ttl_xi+0.2*sampling_rate).astype(int)
     #print(len(ttl_xf- ttl_xi))
     cell_trace  = np.average(cell_trace_all, axis =0)
-    cell_trace_base_line = np.mean(cell_trace[0:2000] )
+    cell_trace_base_line = np.mean(cell_trace[100:300] )
     cell_trace_av = cell_trace - cell_trace_base_line
     cell_trace_b_sub = cell_trace_all-cell_trace_base_line
 #    print(f' baseline = {cell_trace_av}')
@@ -378,13 +373,28 @@ def raw_peak_dist(points_or_pattern_file_set,title,fig,axs,plt_no):
     axs[plt_no].set_ylabel('Cell response to patterns (mV)',
                            fontproperties=sub_titles)
     for i in range(len(pre)):
-        axs[plt_no].scatter(x,pre[i], color='#377eb8', label='pre')
+        if i==0:
+            axs[plt_no].scatter(x,pre[i], color='#377eb8', label='pre')
+        else:
+            axs[plt_no].scatter(x,pre[i], color='#377eb8')
+
         if title=='pattern':
-            axs[plt_no].scatter(x[0],pre[i][0],color='k')
+            if i ==0:
+                axs[plt_no].scatter(x[0],pre[i][0],color='k',
+                                    label='pre training(trained patten)')
+            else:
+                axs[plt_no].scatter(x[0],pre[i][0],color='k')
     for i in range(len(post)):
-        axs[plt_no].scatter(x,post[i],color='#ff7f00', label='post')
+        if i ==0:
+            axs[plt_no].scatter(x,post[i],color='#ff7f00', label='post')
+        else:
+            axs[plt_no].scatter(x,post[i],color='#ff7f00')
         if title=='pattern':
-            axs[plt_no].scatter(x[0],post[i][0],color='r', label='trained_pat')
+            if i==0:
+                axs[plt_no].scatter(x[0],post[i][0],color='r',
+                                    label='post training(trained pattern)')
+            else:
+                axs[plt_no].scatter(x[0],post[i][0],color='r')
     axs[plt_no].set_xlabel('Frame number',
                           fontproperties=sub_titles)
    # axs[plt_no].set_xticks([])
@@ -420,6 +430,7 @@ def peak_dist_plot(points_or_pattern_file_set,title, fig, axs, plt_no):
                        bbox_to_anchor=(0.5, -0.2),
                        fancybox=True,
                        title='Frame presentation')
+    #axs[plt_no].set_ylim(-1,15)
     if 'pattern'in title:
         vl =axs[plt_no].vlines([0.6, 1.5], min_peak, max_peak,
                                linestyles='dashed', colors='red')
@@ -562,11 +573,12 @@ def plot_summary(cell, images, outdir):
                  fontproperties=main_title)
     plt.subplots_adjust(hspace=.8, top=0.95)
 #    plt.show()
+
     fig.savefig(plot_name, bbox_inches='tight')
 
 def main(**kwargs):
     #To run the individual trace plots in one go activate below line
-    tpp.main(**kwargs)
+#    tpp.main(**kwargs)
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     i = Path(kwargs['image_path'])
