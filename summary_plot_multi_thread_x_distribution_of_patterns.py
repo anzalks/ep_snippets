@@ -578,7 +578,7 @@ def plot_summary(cell, images, outdir):
 
 def main(**kwargs):
     #To run the individual trace plots in one go activate below line
-#    tpp.main(**kwargs)
+    tpp.main(**kwargs)
     p = Path(kwargs['abf_path'])
     c = Path(kwargs['pattern_path'])
     i = Path(kwargs['image_path'])

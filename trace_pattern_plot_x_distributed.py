@@ -237,6 +237,8 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
             axs[plt_no].set_ylim(y_l,y_u)
         elif channel_name =='Field':
             axs[plt_no].set_ylim(-1.5,1.5)
+            axs[plt_no].set_title('Field recording',
+                                 fontproperties=sub_titles)
         else:
             y_u = np.max(trace_average)
             y_l = np.min(trace_average)
@@ -256,6 +258,7 @@ def subplot_channels(file_name,plt_no,channel_name,fig, axs,frames, zoom):
 
 def plot_all_cannels(file_name,chanel_name,plt_no, fig, axs, frames, zoom):
     f = str(file_name)
+    print(f)
     reader = nio.AxonIO(f)
     channels = reader.header['signal_channels']
     chan_count = len(channels)
@@ -276,7 +279,7 @@ def main_plot(f_name,p_files,outdir):
             print (f_name, chanel_name,plt_no)
             plot_all_cannels(f_name,chanel_name,plt_no, 
                              fig, axs,frames, zoom)
-        plt.xlabel('time(s)',fontproperties=y_labels)
+            plt.xlabel('time(s)',fontproperties=y_labels)
 #            if title=='Points':
 #                xlim = [6.3,7]
 #            elif title=='Patterns':
@@ -294,12 +297,13 @@ def main_plot(f_name,p_files,outdir):
 #                continue
 
         if title=='Points':
-            #xlim = [1,4.2]
-            xlim =left=0
-            #xlim = [6.3,6.7]
+            print(f'title  = {title}"""""""""""""""')
+            xlim = [1,4.2]
+            #xlim =left=0
+            #rxlim = [6.3,6.7]
         elif title=='Patterns':
-            #xlim = [0.5,7.5]
-            xlim=left=0
+            xlim = [0.5,7.5]
+            #xlim=left=0
             #xlim = [4,4.5]
         elif title=='Training pattern':
 #            print('************** training pattern plot')
@@ -316,7 +320,8 @@ def main_plot(f_name,p_files,outdir):
         else:
             print(f'something went wrong with plot {f_name}')
 #            continue
-        plt.xlim(xlim)
+        plt.xlim(xlim[0],xlim[1])
+        print(f'seected xlin for {file_name} = {xlim}************')
         plt.suptitle(f'Response to {title}',
                      fontproperties=main_title)
 #            fig.tight_layout()
@@ -369,6 +374,6 @@ if __name__  == '__main__':
 
     parser.parse_args(namespace=args_)
     ts = time.time()
-    main(**vars(args_))
+    #main(**vars(args_))
     tf = time.time()
-    print(f'total time taken = {tf-ts} (s)')
+    #print(f'total time taken = {tf-ts} (s)')
