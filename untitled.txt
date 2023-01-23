@@ -1,0 +1,63 @@
+def raw_peak_dist(points_or_pattern_file_set_abf):
+    global epsp_post_raw
+    pre_f = points_or_pattern_file_set_abf[0]
+    post_f = points_or_pattern_file_set_abf[1:]
+    epsp_pre_av = peak_event(pre_f,'IN0')[0]
+    epsp_pre = peak_event(pre_f,'IN0')[1] #IN0 for cell channel
+    epsp_pre_raw = peak_event(pre_f,'IN0')[2] #IN0 for cell channel
+    epsp_post_av = []
+    epsp_post = []
+    epsp_post_raw = []
+    for p in post_f:
+        epsp_post_raw.append(peak_event(p,'IN0')[2]) #IN0 for cell channel
+        epsp_post.append(peak_event(p,'IN0')[1]) #IN0 for cell channel
+        epsp_post_av.append(peak_event(p,'IN0')[0]) #IN0 for cell channel
+    epsp_raw = [epsp_pre_raw,epsp_post_raw]
+    epsp_pre = [epsp_pre_av,epsp_pre]
+    epsp_post = [epsp_post_av,epsp_post]
+    epsp_events = [epsp_pre,epsp_post,epsp_raw]
+    #print(f'raw_peak_dist_worked')
+    return epsp_events
+
+
+    event_av = []
+    events = []
+    pat_trace =[]
+    t_pat_trace =[]
+    for i,ti in enumerate(ttl_xi): 
+        event_av.append(np.max(cell_trace_av[ttl_xi[i]:ttl_xf[i]]))
+        pattern = []
+        pt_trace = []
+        for n, ni in enumerate(cell_trace_all):
+            r_t =ni[ttl_xi[i]:ttl_xf[i]]
+            b_l = np.mean(ni[bl_xi[i]:bl_xf[i]],axis=0)
+            bl_t = ni[bl_xi[i]:bl_xf[i]]-b_l
+            p_t = r_t-b_l
+            pat_t = ni[bl_xi[i]:ttl_xf[i]]
+            pt_trace.append(pat_t)
+            pt_max = np.max(p_t)
+            t_pat_trace.append(pt_max)
+            pattern.append(pt_max)
+        events.append(pattern)
+        pat_trace.append(pt_trace)
+    #print(f'peak_event worked, events ={events}')
+    return [event_av, events,pat_trace]
+
+def classic_ltp_plot_patterns(cell_path,outdir):
+    global epsps_points_pre
+    global epsps_points_post
+    global epsps_patterns_pre
+    global epsps_patterns_post
+    f_name = cell_path.stem
+    outdir = f'{outdir}/{f_name}'
+    print(f' out for save = {outdir}')
+    files_paired = file_pair(cell_path)
+    points = files_paired[0]
+    patterns = files_paired[1]
+    
+    epsps_points_pre = raw_peak_dist(points)[0][1]
+    epsps_points_post = raw_peak_dist(points)[1][1]
+    
+    epsps_patterns_pre = raw_peak_dist(patterns)[0][1]
+    epsps_patterns_post = raw_peak_dist(patterns)[1][1]
+    pat_0min = np.array(epsps_patterns_post[0])
